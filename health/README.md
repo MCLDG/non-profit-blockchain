@@ -1,6 +1,8 @@
-# Part 6: Read and write to the blockchain with AWS Lambda
+# Health check the Managed Blockchain peer nodes
 
-In this blog post we will learn how to publish a Lambda function to invoke chaincode functions on a Hyperledger Fabric blockchain running on Amazon Managed Blockchain.  We will use the NodeJS Hyperledger Fabric SDK within the Lambda function to interface with the blockchain.
+In this section we will deploy a Lambda function that checks the health of the Amazon Managed Blockchain peer nodes.
+The Lambda function will return success if all the peer nodes in the Fabric network are AVAILABLE, otherwise it will
+return an error.
 
 ## Pre-requisites
 
@@ -53,7 +55,7 @@ The steps we will execute in this part are:
 Copy the source folder into a staging folder we can use for preparing the deployment bundle we will deploy to Lambda.
 
 ```
-cp -R ~/non-profit-blockchain/ngo-lambda /tmp/lambdaWork
+cp -R ~/non-profit-blockchain/health /tmp/lambdaWork
 ```
 
 ## Step 2 - Copy the Managed Blockchain certificate
@@ -79,8 +81,8 @@ fabric-ca-client enroll -u https://$FABRICUSER:$FABRICUSERPASSWORD@$CASERVICEEND
 
 ## Step 4 - Put user credentials on Secrets Manager ##
 ```
-aws secretsmanager create-secret --name "dev/fabricOrgs/$MEMBERNAME/$FABRICUSER/pk" --secret-string "`cat /tmp/certs/$FABRICUSER/keystore/*`" --region us-east-1
-aws secretsmanager create-secret --name "dev/fabricOrgs/$MEMBERNAME/$FABRICUSER/signcert" --secret-string "`cat /tmp/certs/$FABRICUSER/signcerts/*`" --region us-east-1
+aws secretsmanager create-secret --name "dev/fabricOrgs/$MEMBERNAME/$FABRICUSER/pk" --secret-string "`cat /tmp/certs/$FABRICUSER/keystore/*`" --region $REGION
+aws secretsmanager create-secret --name "dev/fabricOrgs/$MEMBERNAME/$FABRICUSER/signcert" --secret-string "`cat /tmp/certs/$FABRICUSER/signcerts/*`" --region $REGION
 ```
 
 ## Step 5 - Copy the Fabric client connection profiles
@@ -132,7 +134,7 @@ Archive the Lambda code into a zip file.
 
 ```
 cd /tmp/lambdaWork
-zip -r /tmp/ngo-lambda-function.zip  .
+zip -r /tmp/health-function.zip  .
 ```
 
 ### Step 8b - Prepare and create the function
@@ -148,7 +150,7 @@ Within `--vpc-config`, for SecurityGroupIds, replace `string` with the Cloudform
 Once you have updated those environment variables, execute the `create-function` call below.
 
 ```
-aws lambda create-function --function-name ngo-lambda-function --runtime nodejs8.10 --handler index.handler --memory-size 512 --role arn:aws:iam::XXXXXXXXXXXX:role/Lambda-Fabric-Role --vpc-config SubnetIds=string,SecurityGroupIds=string --environment Variables="{CA_ENDPOINT=$CASERVICEENDPOINT,PEER_ENDPOINT=grpcs://$PEERSERVICEENDPOINT,ORDERER_ENDPOINT=grpcs://$ORDERINGSERVICEENDPOINT,CHANNEL_NAME=$CHANNEL,CHAIN_CODE_ID=ngo,CRYPTO_FOLDER=/tmp,MSP=$MSP,FABRICUSER=$FABRICUSER,MEMBERNAME=$MEMBERNAME"}" --zip-file fileb:///tmp/ngo-lambda-function.zip --region us-east-1 --timeout 30
+aws lambda create-function --function-name health-function --runtime nodejs8.10 --handler index.handler --memory-size 512 --role arn:aws:iam::XXXXXXXXXXXX:role/Lambda-Fabric-Role --vpc-config SubnetIds=string,SecurityGroupIds=string --environment Variables="{CA_ENDPOINT=$CASERVICEENDPOINT,PEER_ENDPOINT=grpcs://$PEERSERVICEENDPOINT,ORDERER_ENDPOINT=grpcs://$ORDERINGSERVICEENDPOINT,CHANNEL_NAME=$CHANNEL,CHAIN_CODE_ID=ngo,CRYPTO_FOLDER=/tmp,MSP=$MSP,FABRICUSER=$FABRICUSER,MEMBERNAME=$MEMBERNAME"}" --zip-file fileb:///tmp/health-function.zip --region us-east-1 --timeout 30
 ```
 
 ## Step 9 - Create a VPC Endpoint to Secrets Manager
@@ -174,8 +176,8 @@ You can test the Lambda function from the [Lambda console](https://console.aws.a
 
 To test from the cli, we will first create a donor, and then query the donor.  The output of each command is in the file specified in the last argument:
 ```
-aws lambda invoke --function-name ngo-lambda-function --payload '{"functionType": "invoke","chaincodeFunction": "createDonor","chaincodeFunctionArgs": {"donorUserName":"melissa","email":"melissa@melissasngo.org"}}' --region us-east-1 /tmp/lambda-output-invoke.txt
-aws lambda invoke --function-name ngo-lambda-function --payload '{"functionType":"query","chaincodeFunction":"queryDonor","chaincodeFunctionArgs":{"donorUserName":"melissa"}}' --region us-east-1 /tmp/lambda-output-query.txt
+aws lambda invoke --function-name health-function --payload '{"functionType": "invoke","chaincodeFunction": "createDonor","chaincodeFunctionArgs": {"donorUserName":"melissa","email":"melissa@melissasngo.org"}}' --region us-east-1 /tmp/lambda-output-invoke.txt
+aws lambda invoke --function-name health-function --payload '{"functionType":"query","chaincodeFunction":"queryDonor","chaincodeFunctionArgs":{"donorUserName":"melissa"}}' --region us-east-1 /tmp/lambda-output-query.txt
 ```
 
 ## The workshop sections
@@ -186,4 +188,4 @@ The workshop instructions can be found in the README files in parts 1-4:
 * [Part 3:](../ngo-rest-api/README.md) Run the RESTful API server. 
 * [Part 4:](../ngo-ui/README.md) Run the application. 
 * [Part 5:](../new-member/README.md) Add a new member to the network. 
-* [Part 6:](../ngo-lambda/README.md) Read and write to the blockchain with AWS Lambda. 
+* [Part 6:](../health/README.md) Read and write to the blockchain with AWS Lambda. 

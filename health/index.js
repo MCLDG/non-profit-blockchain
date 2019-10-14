@@ -15,11 +15,18 @@
 */
 
 /*
-    Performs a health check against all peer nodes in an AMB network
+    Performs a health check against all peer nodes in an AMB network. The input
+    argument to this function looks as follows:
+
+    {
+        "networkId": "n-6HQQS33ZMVAGJG7CISVGFNWIPU",
+        "memberId": "m-QIQPG3G2PZEERHCPVFLYH6ZN54"
+    }
 */
 
 'use strict';
 
+const util = require("util");
 const amb = require('aws-sdk/clients/managedblockchain');
 const logger = require("./logging").getLogger("lambdaFunction");
 

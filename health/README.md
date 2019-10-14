@@ -112,7 +112,7 @@ npm install
 ### Step 7a - Create the role
 
 ```
-aws iam create-role --role-name Lambda-Fabric-Role --assume-role-policy-document file://Lambda-Fabric-Role-Trust-Policy.json
+aws iam create-role --role-name Lambda-Fabric-Role --assume-role-policy-document file://Lambda-Fabric-Role-Trust-Policy.json > /tmp/lambdaFabricRole-output.json
 ```
 
 This will output a JSON representation of the new role.  Copy the output to a local document so you can refer back to it later.
@@ -139,18 +139,34 @@ zip -r /tmp/health-function.zip  .
 
 ### Step 8b - Prepare and create the function
 
-Before running `create-function` you will need to replace a few parameters with those from your environment.
+You now have everything you need to create the Lambda function, including the IAM role with the required policies, and the code archive. You will need to set a few input parameters to pass into the create-function call. We will do this by setting environment variables for the role ARN from the output of step 7a, and the SubnetID and SecurityGroupID, which are retrieved from our CloudFormation stack outputs.
 
-From the AWS console, view the output of the [AWS Cloudformation](https://console.aws.amazon.com/cloudformation/home?region=us-east-1) stack you created in [Part 1](../ngo-fabric/README.md).  Click the 'Outputs' tab.
-
-For `--role`, replace `arn:aws...XXX` from the output of step 6a.
-Within `--vpc-config`, for SubnetIds, replace `string` with the Cloudformation value for the key `PublicSubnetID`.
-Within `--vpc-config`, for SecurityGroupIds, replace `string` with the Cloudformation value for the key `SecurityGroupID`.
-
-Once you have updated those environment variables, execute the `create-function` call below.
+You can set these environment variables by issuing these commands.
 
 ```
-aws lambda create-function --function-name health-function --runtime nodejs8.10 --handler index.handler --memory-size 512 --role arn:aws:iam::XXXXXXXXXXXX:role/Lambda-Fabric-Role --vpc-config SubnetIds=string,SecurityGroupIds=string --environment Variables="{CA_ENDPOINT=$CASERVICEENDPOINT,PEER_ENDPOINT=grpcs://$PEERSERVICEENDPOINT,ORDERER_ENDPOINT=grpcs://$ORDERINGSERVICEENDPOINT,CHANNEL_NAME=$CHANNEL,CHAIN_CODE_ID=ngo,CRYPTO_FOLDER=/tmp,MSP=$MSP,FABRICUSER=$FABRICUSER,MEMBERNAME=$MEMBERNAME"}" --zip-file fileb:///tmp/health-function.zip --region us-east-1 --timeout 30
+export ROLE_ARN=grep -o '"Arn": *"[^"]*"' /tmp/lambdaFabricRole-output.json | grep -o '"[^"]*"$'
+export SUBNETID=$(aws cloudformation --region $REGION describe-stacks --stack-name $NETWORKNAME-fabric-client-node --query "Stacks[0].Outputs[?OutputKey=='PublicSubnetID'].OutputValue" --output text)
+export SECURITYGROUPID=$(aws cloudformation --region $REGION describe-stacks --stack-name $NETWORKNAME-fabric-client-node --query "Stacks[0].Outputs[?OutputKey=='SecurityGroupID'].OutputValue" --output text)
+```
+
+Once you have set the environment variables, execute the create-function call below.
+
+```
+aws lambda create-function --function-name health-function --runtime nodejs8.10 --handler index.handler --memory-size 512 --role $ROLE_ARN --vpc-config SubnetIds=$SUBNETID,SecurityGroupIds=$SECURITYGROUPID --environment Variables="{CA_ENDPOINT=$CASERVICEENDPOINT,PEER_ENDPOINT=grpcs://$PEERSERVICEENDPOINT,ORDERER_ENDPOINT=grpcs://$ORDERINGSERVICEENDPOINT,CHANNEL_NAME=$CHANNEL,CHAIN_CODE_ID=ngo,CRYPTO_FOLDER=/tmp,MSP=$MSP,FABRICUSER=$FABRICUSER,MEMBERNAME=$MEMBERNAME}" --zip-file fileb:///tmp/health-function.zip --region $REGION --timeout 30
+```
+
+If you get an error indicating Function already exist: health-function, you can update the existing Lambda using the commands below. The first command updates the configuration of the Lambda function. The second command updates the code archive.
+
+First, update the runtime configuration:
+
+```
+aws lambda update-function-configuration --function-name health-function --runtime nodejs8.10 --handler index.handler --memory-size 512 --role $ROLE_ARN --vpc-config SubnetIds=$SUBNETID,SecurityGroupIds=$SECURITYGROUPID --environment Variables="{CA_ENDPOINT=$CASERVICEENDPOINT,PEER_ENDPOINT=grpcs://$PEERSERVICEENDPOINT,ORDERER_ENDPOINT=grpcs://$ORDERINGSERVICEENDPOINT,CHANNEL_NAME=$CHANNEL,CHAIN_CODE_ID=ngo,CRYPTO_FOLDER=/tmp,MSP=$MSP,FABRICUSER=$FABRICUSER,MEMBERNAME=$MEMBERNAME}" --timeout 30 --region $REGION
+```
+
+Next, update the code archive:
+
+```
+aws lambda update-function-code --function-name health-function --zip-file fileb:///tmp/health-function.zip --region $REGION
 ```
 
 ## Step 9 - Create a VPC Endpoint to Secrets Manager

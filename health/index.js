@@ -38,6 +38,7 @@ async function handler(event) {
         let memberId = event.memberId;
         let data;
         let unavailablePeers = [];
+        let managedblockchain = new AWS.ManagedBlockchain();
 
         try {
             logger.info("=== Handler Function Start ===");

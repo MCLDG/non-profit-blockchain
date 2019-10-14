@@ -27,6 +27,7 @@
 'use strict';
 
 const util = require("util");
+const AWS = require("aws-sdk");
 const amb = require('aws-sdk/clients/managedblockchain');
 const logger = require("./logging").getLogger("lambdaFunction");
 

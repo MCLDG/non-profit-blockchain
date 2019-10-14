@@ -28,18 +28,17 @@
 
 const util = require("util");
 const AWS = require("aws-sdk");
+let managedblockchain = new AWS.ManagedBlockchain();
 const amb = require('aws-sdk/clients/managedblockchain');
 const logger = require("./logging").getLogger("lambdaFunction");
 
 
-async function handler(event) {
-    const promise = new Promise(async (resolve, reject) => {
+exports.handler = async (event) => {
 
         let networkId = event.networkId;
         let memberId = event.memberId;
         let data;
         let unavailablePeers = [];
-        let managedblockchain = new AWS.ManagedBlockchain();
 
         try {
             logger.info("=== Handler Function Start ===");
@@ -65,13 +64,11 @@ async function handler(event) {
                 throw new Error('Peer node(s) unavailable: ' + unavailablePeers);
 
             logger.info("=== Handler Function End ===");
-            return resolve(data);
         } catch (err) {
             logger.error('##### Error during peer health check: ' + util.inspect(err) + ' ' + util.inspect(err.stack));
-            reject(Error(err));
+            return err;
         }
-    });
-    return promise;
-};
+        return data;
+    };
 
 module.exports = { handler };

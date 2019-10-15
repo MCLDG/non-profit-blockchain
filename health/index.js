@@ -49,6 +49,8 @@ exports.handler = async (event) => {
         data = await managedblockchain.listNodes(params).promise();
         logger.debug('##### Output of listNodes called during peer health check: ' + JSON.stringify(data));
         var peerUnavailable = false;
+
+        //TODO: code needs to ignore nodes that have been DELETED. Perhaps other status too
         for (var i = 0; i < data.Nodes.length; i++) {
             var node = data.Nodes[i];
             if (node.Status != 'AVAILABLE') {
@@ -67,7 +69,7 @@ exports.handler = async (event) => {
         return {
             'statusCode': 500,
             'body': err,
-            'body2': {err},
+            'body2': JSON.stringify({"Error Message: ": err}),
             'unavailablePeers': unavailablePeers
           }
     }

@@ -27,12 +27,14 @@
 'use strict';
 
 let AWS = require('aws-sdk');
-let lambda = new AWS.Lambda();
+//let lambda = new AWS.Lambda();
+let sns = new AWS.SNS();
 let data;
 
 exports.handler = async (event) => {
     try {
-        data = await lambda.getAccountSettings().promise();
+        data = await sns.listTopics().promise();
+        //data = await lambda.getAccountSettings().promise();
     }
     catch (err) {
         console.log(err);

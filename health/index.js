@@ -33,17 +33,19 @@ let managedblockchain = new AWS.ManagedBlockchain();
 let data;
 
 exports.handler = async (event) => {
+    let networkId = event.networkId;
+    let memberId = event.memberId;
     try {
         //data = await sns.listTopics().promise();
         //data = await lambda.getAccountSettings().promise();
-            var params = {
-                MemberId: memberId,
-                NetworkId: networkId
-            };
+        var params = {
+            MemberId: memberId,
+            NetworkId: networkId
+        };
 
-            logger.info('##### About to call listNodes: ' + params);
-            data = await managedblockchain.listNodes(params).promise();
-}
+        logger.info('##### About to call listNodes: ' + params);
+        data = await managedblockchain.listNodes(params).promise();
+    }
     catch (err) {
         console.log(err);
         return err;

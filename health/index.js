@@ -66,7 +66,9 @@ exports.handler = async (event) => {
         logger.error('Error when checking health of peer nodes: ' + err);
         return {
             'statusCode': 500,
-            'body': JSON.stringify(err),
+            'body': err,
+            'body2': {err},
+            'body3': JSON.parse(err),
             'unavailablePeers': unavailablePeers
           }
     }

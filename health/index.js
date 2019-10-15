@@ -31,6 +31,7 @@ let AWS = require('aws-sdk');
 //let sns = new AWS.SNS();
 let managedblockchain = new AWS.ManagedBlockchain();
 let data;
+const logger = require("./logging").getLogger("lambdaFunction");
 
 exports.handler = async (event) => {
     let networkId = event.networkId;

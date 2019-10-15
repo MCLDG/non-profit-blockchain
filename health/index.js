@@ -45,10 +45,11 @@ exports.handler = async (event) => {
             NetworkId: networkId
         };
 
-        logger.info('##### About to call listNodes: ' + params);
+        logger.info('##### About to call listNodes: ' + JSON.stringify(params));
         data = await managedblockchain.listNodes(params).promise();
         logger.info('##### Output of listNodes called during peer health check: ' + data);
         logger.info('##### Output of listNodes called during peer health check: ' + util.inspect(data));
+        logger.info('##### Output of listNodes called during peer health check: ' + JSON.stringify(data));
         var peerUnavailable = false;
         for (var i = 0; i < data.Nodes.length; i++) {
             var node = data.Nodes[i];
@@ -56,7 +57,7 @@ exports.handler = async (event) => {
                 unavailablePeers.push(node.Id + ' ' + node.Status);
                 peerUnavailable = true;
             }
-            logger.info('##### GET on healthpeers. Node is : ' + util.inspect(node));
+            logger.info('##### Looping through nodes in healthpeers. Node is : ' + JSON.stringify(node));
         }
         if (peerUnavailable)
             throw new Error('Peer node(s) unavailable: ' + unavailablePeers);
@@ -65,7 +66,13 @@ exports.handler = async (event) => {
     }
     catch (err) {
         console.log(err);
-        return err;
+        return {
+            'statusCode': 500,
+            'body': JSON.stringify(err)
+          }
     }
-    return data;
+    return {
+        'statusCode': 200,
+        'body': JSON.stringify(data)
+      }
 };

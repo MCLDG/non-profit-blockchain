@@ -26,53 +26,68 @@
 
 'use strict';
 
-const util = require("util");
-const AWS = require("aws-sdk");
-let managedblockchain = new AWS.ManagedBlockchain();
-const amb = require('aws-sdk/clients/managedblockchain');
-const logger = require("./logging").getLogger("lambdaFunction");
+let AWS = require('aws-sdk');
+let lambda = new AWS.Lambda();
+let data;
 
-
-async function handler(event) {
-    const promise = new Promise(async (resolve, reject) => {
-
-        let networkId = event.networkId;
-        let memberId = event.memberId;
-        let data;
-        let unavailablePeers = [];
-
-        try {
-            logger.info("=== Handler Function Start ===" + JSON.stringify(event, null, 2));
-
-            var params = {
-                MemberId: memberId,
-                NetworkId: networkId
-            };
-
-            logger.info('##### About to call listNodes: ' + params);
-            data = await managedblockchain.listNodes(params);
-            logger.info('##### Output of listNodes called during peer health check: ' + data);
-            logger.info('##### Output of listNodes called during peer health check: ' + util.inspect(data));
-            // var peerUnavailable = false;
-            // for (var i = 0; i < data.Nodes.length; i++) {
-            //     var node = data.Nodes[i];
-            //     if (node.Status != 'AVAILABLE') {
-            //         unavailablePeers.push(node.Id + ' ' + node.Status);
-            //         peerUnavailable = true;
-            //     }
-            //     logger.info('##### GET on healthpeers. Node is : ' + util.inspect(node));
-            // }
-            // if (peerUnavailable)
-            //     throw new Error('Peer node(s) unavailable: ' + unavailablePeers);
-
-            logger.info("=== Handler Function End ===");
-            return resolve(data);
-        } catch (err) {
-            logger.error('##### Error during peer health check: ' + util.inspect(err) + ' ' + util.inspect(err.stack));
-            reject(Error(err));
-        }
-    });
-    return promise;
+exports.handler = async (event) => {
+    try {
+        data = await lambda.getAccountSettings().promise();
+    }
+    catch (err) {
+        console.log(err);
+        return err;
+    }
+    return data;
 };
 
-module.exports = { handler };
+// const util = require("util");
+// const AWS = require("aws-sdk");
+// let managedblockchain = new AWS.ManagedBlockchain();
+// const amb = require('aws-sdk/clients/managedblockchain');
+// const logger = require("./logging").getLogger("lambdaFunction");
+
+
+// async function handler(event) {
+//     const promise = new Promise(async (resolve, reject) => {
+
+//         let networkId = event.networkId;
+//         let memberId = event.memberId;
+//         let data;
+//         let unavailablePeers = [];
+
+//         try {
+//             logger.info("=== Handler Function Start ===" + JSON.stringify(event, null, 2));
+
+//             var params = {
+//                 MemberId: memberId,
+//                 NetworkId: networkId
+//             };
+
+//             logger.info('##### About to call listNodes: ' + params);
+//             data = await managedblockchain.listNodes(params);
+//             logger.info('##### Output of listNodes called during peer health check: ' + data);
+//             logger.info('##### Output of listNodes called during peer health check: ' + util.inspect(data));
+//             // var peerUnavailable = false;
+//             // for (var i = 0; i < data.Nodes.length; i++) {
+//             //     var node = data.Nodes[i];
+//             //     if (node.Status != 'AVAILABLE') {
+//             //         unavailablePeers.push(node.Id + ' ' + node.Status);
+//             //         peerUnavailable = true;
+//             //     }
+//             //     logger.info('##### GET on healthpeers. Node is : ' + util.inspect(node));
+//             // }
+//             // if (peerUnavailable)
+//             //     throw new Error('Peer node(s) unavailable: ' + unavailablePeers);
+
+//             logger.info("=== Handler Function End ===");
+//             return resolve(data);
+//         } catch (err) {
+//             logger.error('##### Error during peer health check: ' + util.inspect(err) + ' ' + util.inspect(err.stack));
+//             reject(Error(err));
+//         }
+//     });
+//     return promise;
+// };
+
+// module.exports = { handler };

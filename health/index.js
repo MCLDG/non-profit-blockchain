@@ -68,7 +68,6 @@ exports.handler = async (event) => {
             'statusCode': 500,
             'body': err,
             'body2': {err},
-            'body3': JSON.parse(err),
             'unavailablePeers': unavailablePeers
           }
     }

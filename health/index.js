@@ -51,7 +51,8 @@ async function handler(event) {
 
             logger.info('##### About to call listNodes: ' + params);
             data = await managedblockchain.listNodes(params);
-            // logger.info('##### Output of listNodes called during peer health check: ' + util.inspect(data));
+            logger.info('##### Output of listNodes called during peer health check: ' + data);
+            logger.info('##### Output of listNodes called during peer health check: ' + util.inspect(data));
             // var peerUnavailable = false;
             // for (var i = 0; i < data.Nodes.length; i++) {
             //     var node = data.Nodes[i];

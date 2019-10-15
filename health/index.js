@@ -47,9 +47,7 @@ exports.handler = async (event) => {
 
         logger.info('##### About to call listNodes: ' + JSON.stringify(params));
         data = await managedblockchain.listNodes(params).promise();
-        logger.info('##### Output of listNodes called during peer health check: ' + data);
-        logger.info('##### Output of listNodes called during peer health check: ' + util.inspect(data));
-        logger.info('##### Output of listNodes called during peer health check: ' + JSON.stringify(data));
+        logger.debug('##### Output of listNodes called during peer health check: ' + JSON.stringify(data));
         var peerUnavailable = false;
         for (var i = 0; i < data.Nodes.length; i++) {
             var node = data.Nodes[i];
@@ -57,7 +55,7 @@ exports.handler = async (event) => {
                 unavailablePeers.push(node.Id + ' ' + node.Status);
                 peerUnavailable = true;
             }
-            logger.info('##### Looping through nodes in healthpeers. Node is : ' + JSON.stringify(node));
+            logger.debug('##### Looping through nodes in healthpeers. Node is : ' + JSON.stringify(node));
         }
         if (peerUnavailable)
             throw new Error('Peer node(s) unavailable: ' + unavailablePeers);
@@ -65,10 +63,10 @@ exports.handler = async (event) => {
         logger.info("=== Handler Function End ===");
     }
     catch (err) {
-        console.log(err);
+        logger.error('Error when checking health of peer nodes: ' + err);
         return {
             'statusCode': 500,
-            'body': err,
+            'body': JSON.stringify(err),
             'unavailablePeers': unavailablePeers
           }
     }

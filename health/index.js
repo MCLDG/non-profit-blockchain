@@ -33,7 +33,7 @@ const amb = require('aws-sdk/clients/managedblockchain');
 const logger = require("./logging").getLogger("lambdaFunction");
 
 
-exports.handler = async (event) => {
+exports.handler = async function(event) {
 
     let networkId = event.networkId;
     let memberId = event.memberId;
@@ -48,7 +48,7 @@ exports.handler = async (event) => {
             NetworkId: networkId
         };
 
-        data = await managedblockchain.listNodes(params).promise();
+        data = await managedblockchain.listNodes(params);
 
         logger.info('##### Output of listNodes called during peer health check: ' + util.inspect(data));
         var peerUnavailable = false;

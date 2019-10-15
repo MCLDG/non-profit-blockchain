@@ -68,11 +68,12 @@ exports.handler = async (event) => {
         console.log(err);
         return {
             'statusCode': 500,
-            'body': JSON.stringify(err)
+            'body': err,
+            'unavailablePeers': unavailablePeers
           }
     }
     return {
         'statusCode': 200,
-        'body': JSON.stringify(data)
+        'body': data
       }
 };

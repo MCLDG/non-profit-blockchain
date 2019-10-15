@@ -33,40 +33,45 @@ const amb = require('aws-sdk/clients/managedblockchain');
 const logger = require("./logging").getLogger("lambdaFunction");
 
 
-exports.handler = async function(event) {
+async function handler(event) {
+    const promise = new Promise(async (resolve, reject) => {
 
-    let networkId = event.networkId;
-    let memberId = event.memberId;
-    let data;
-    let unavailablePeers = [];
+        let networkId = event.networkId;
+        let memberId = event.memberId;
+        let data;
+        let unavailablePeers = [];
 
-    try {
-        logger.info("=== Handler Function Start ===");
+        try {
+            logger.info("=== Handler Function Start ===" + JSON.stringify(event, null, 2));
 
-        var params = {
-            MemberId: memberId,
-            NetworkId: networkId
-        };
+            var params = {
+                MemberId: memberId,
+                NetworkId: networkId
+            };
 
-        data = await managedblockchain.listNodes(params);
+            logger.info('##### About to call listNodes: ' + params);
+            data = await managedblockchain.listNodes(params);
+            // logger.info('##### Output of listNodes called during peer health check: ' + util.inspect(data));
+            // var peerUnavailable = false;
+            // for (var i = 0; i < data.Nodes.length; i++) {
+            //     var node = data.Nodes[i];
+            //     if (node.Status != 'AVAILABLE') {
+            //         unavailablePeers.push(node.Id + ' ' + node.Status);
+            //         peerUnavailable = true;
+            //     }
+            //     logger.info('##### GET on healthpeers. Node is : ' + util.inspect(node));
+            // }
+            // if (peerUnavailable)
+            //     throw new Error('Peer node(s) unavailable: ' + unavailablePeers);
 
-        logger.info('##### Output of listNodes called during peer health check: ' + util.inspect(data));
-        var peerUnavailable = false;
-        for (var i = 0; i < data.Nodes.length; i++) {
-            var node = data.Nodes[i];
-            if (node.Status != 'AVAILABLE') {
-                unavailablePeers.push(node.Id + ' ' + node.Status);
-                peerUnavailable = true;
-            }
-            logger.info('##### GET on healthpeers. Node is : ' + util.inspect(node));
+            logger.info("=== Handler Function End ===");
+            return resolve(data);
+        } catch (err) {
+            logger.error('##### Error during peer health check: ' + util.inspect(err) + ' ' + util.inspect(err.stack));
+            reject(Error(err));
         }
-        if (peerUnavailable)
-            throw new Error('Peer node(s) unavailable: ' + unavailablePeers);
-
-        logger.info("=== Handler Function End ===");
-    } catch (err) {
-        logger.error('##### Error during peer health check: ' + util.inspect(err) + ' ' + util.inspect(err.stack));
-        return err;
-    }
-    return data;
+    });
+    return promise;
 };
+
+module.exports = { handler };

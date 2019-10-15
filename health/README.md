@@ -144,7 +144,7 @@ You now have everything you need to create the Lambda function, including the IA
 You can set these environment variables by issuing these commands.
 
 ```
-export ROLE_ARN=grep -o '"Arn": *"[^"]*"' /tmp/lambdaFabricRole-output.json | grep -o '"[^"]*"$'
+export ROLE_ARN=$(grep -o '"Arn": *"[^"]*"' /tmp/lambdaFabricRole-output.json | grep -o '"[^"]*"$' | tr -d '"')
 export SUBNETID=$(aws cloudformation --region $REGION describe-stacks --stack-name $NETWORKNAME-fabric-client-node --query "Stacks[0].Outputs[?OutputKey=='PublicSubnetID'].OutputValue" --output text)
 export SECURITYGROUPID=$(aws cloudformation --region $REGION describe-stacks --stack-name $NETWORKNAME-fabric-client-node --query "Stacks[0].Outputs[?OutputKey=='SecurityGroupID'].OutputValue" --output text)
 ```

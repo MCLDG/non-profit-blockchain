@@ -53,7 +53,10 @@ exports.handler = async (event) => {
         //TODO: code needs to ignore nodes that have been DELETED. Perhaps other status too
         for (var i = 0; i < data.Nodes.length; i++) {
             var node = data.Nodes[i];
-            if (node.Status != 'AVAILABLE') {
+            if (node.Status == 'DELETED') {
+                // ignore deleted nodes
+            }
+            else if (node.Status != 'AVAILABLE') {
                 unavailablePeers.push(node.Id + ' ' + node.Status);
                 peerUnavailable = true;
             }

@@ -35,7 +35,8 @@ Resources:
       State: ENABLED
       Targets: 
         - 
-          Arn: !Ref: LambdaFunctionARN
+          Arn: 
+            !Ref: LambdaFunctionARN
           Id: PeerHealthCheckv1
           Input: !Sub |
             {
@@ -53,6 +54,29 @@ Resources:
           - ScheduledRule
           - Arn
           
+  AlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+      - Protocol: email
+        Endpoint: !Ref NotificationEmail
+
+  Alarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+        - !Ref AlarmTopic
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref LambdaFunctionARN
+      EvaluationPeriods: 1
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Period: 60
+      Statistic: Sum
+      Threshold: '1'
+      
 Outputs:
   ScheduledRule:
     Description: CW Scheduled Rule

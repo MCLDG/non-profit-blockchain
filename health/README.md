@@ -63,6 +63,7 @@ cp -R ~/non-profit-blockchain/health /tmp/lambdaWork
 Copy the latest version of the Managed Blockchain PEM file into the staging folder. This will be used to secure communication with the Managed Blockchain service.
 
 ```
+mkdir -p /tmp/lambdaWork/certs
 cp ~/managedblockchain-tls-chain.pem /tmp/lambdaWork/certs/managedblockchain-tls-chain.pem
 ```
 

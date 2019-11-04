@@ -29,7 +29,7 @@
 const util = require("util");
 const AWS = require('aws-sdk');
 const managedblockchain = new AWS.ManagedBlockchain();
-const logger = require("./logging").getLogger("lambdaFunction");
+const logger = require("./logging").getLogger("peer-health-Lambda");
 
 exports.handler = async (event) => {
     let networkId = event.networkId;
@@ -50,7 +50,8 @@ exports.handler = async (event) => {
         logger.debug('##### Output of listNodes called during peer health check: ' + JSON.stringify(data));
         var peerUnavailable = false;
 
-        //TODO: code needs to ignore nodes that have been DELETED. Perhaps other status too
+        //TODO: code needs to look for nodes with a status of FAILED. All other status' should be ignored
+        //I use other status here for testing purposes only. It's difficult to FAIL a peer node, but easy to CREATE/DELETE
         for (var i = 0; i < data.Nodes.length; i++) {
             var node = data.Nodes[i];
             if (node.Status == 'DELETED') {
@@ -63,18 +64,19 @@ exports.handler = async (event) => {
             logger.debug('##### Looping through nodes in healthpeers. Node is : ' + JSON.stringify(node));
         }
         if (peerUnavailable)
-            throw new Error('Peer node(s) unavailable: ' + unavailablePeers);
+            throw new Error('##### Peer node(s) unavailable: ' + unavailablePeers);
 
         logger.info("=== Handler Function End ===");
     }
     catch (err) {
-        logger.error('Error when checking health of peer nodes: ' + err);
+        logger.error('##### Error when checking health of peer nodes, returning HTTP 500: ' + err);
         return {
             'statusCode': 500,
-            'body': 'Error when checking health of peer nodes',
+            'body': 'Error when checking health of peer nodes: ' + err,
             'unavailablePeers': unavailablePeers
           }
     }
+    logger.debug('##### All peer nodes are healthy. Returning HTTP 200');
     return {
         'statusCode': 200,
         'body': data

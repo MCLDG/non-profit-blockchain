@@ -36,7 +36,7 @@ Resources:
       Targets: 
         - 
           Arn: 
-            !Ref: LambdaFunctionARN
+            !Ref LambdaFunctionARN
           Id: PeerHealthCheckv1
           Input: !Sub |
             {
@@ -46,7 +46,7 @@ Resources:
   PermissionForEventsToInvokeLambda: 
     Type: AWS::Lambda::Permission
     Properties: 
-      FunctionName: !Ref: LambdaFunctionARN
+      FunctionName: !Ref LambdaFunctionARN
       Action: lambda:InvokeFunction
       Principal: events.amazonaws.com
       SourceArn: 

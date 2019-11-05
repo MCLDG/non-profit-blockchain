@@ -41,6 +41,10 @@ source ~/peer-exports.sh
 
 You will need an environment variable pointing to an email address. In the CloudFormation template (template.yaml), the SNS topic expects an email subscription.
 
+```
+export SNSEMAIL=youremail@yourdomain.com
+```
+
 ## Overview
 The CloudFormation template is named `template.yaml`. It will create the Lambda, the CW scheduled event, the SNS topic and the email subscription. To create the CloudFormation stack:
 

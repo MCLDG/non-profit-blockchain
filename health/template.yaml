@@ -58,10 +58,14 @@ Resources:
         PolicyDocument:
           Version: '2012-10-17'
           Statement:
-          - Action:
+          - Effect: Allow
+            Action:
             - managedblockchain:ListNodes
-            Effect: Allow
             Resource: "*"
+          - Effect: Allow
+            Action:
+            - logs:*
+            Resource: arn:aws:logs:*:*:*
 
   ScheduledRule: 
     Type: AWS::Events::Rule

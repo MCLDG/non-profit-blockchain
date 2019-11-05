@@ -40,7 +40,7 @@ Resources:
         - LambdaExecutionRole
         - Arn
 
-  LambdaExecutionRole:
+  PeerHealthFunctionRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -124,5 +124,5 @@ Outputs:
     Value: !GetAtt PeerHealthFunction.Arn
 
   PeerHealthFunctionIamRole:
-    Description: "Implicit IAM Role created for Hello World function"
+    Description: "IAM Role for Peer Health Lambda Function"
     Value: !GetAtt PeerHealthFunctionRole.Arn

@@ -12,7 +12,8 @@
 # permissions and limitations under the License.
  
 AWSTemplateFormatVersion: 2010-09-09
-Description: Amazon Managed Blockchain. Creates a CW scheduled event that triggers the peer health check Lambda
+Description: Amazon Managed Blockchain. Creates a peer health check Lambda function, and a CW scheduled event that triggers the Lambda. Alarms are published to SNS
+Transform: AWS::Serverless-2016-10-31
 Metadata:
   LICENSE: Apache License Version 2.0
 Parameters:
@@ -22,11 +23,15 @@ Parameters:
   MemberId:
     Description: The member ID you want to execute the health check against
     Type: String
-  LambdaFunctionARN:
-    Description: The peer health check Lambda function that is invoked by the CW scheduled event. The ARN is required, not only the name
-    Type: String
 
 Resources:
+  PeerHealthFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: peer-health/
+      Handler: app.handler
+      Runtime: nodejs8.10
+
   ScheduledRule: 
     Type: AWS::Events::Rule
     Properties: 
@@ -36,7 +41,7 @@ Resources:
       Targets: 
         - 
           Arn: 
-            !Ref LambdaFunctionARN
+            !Ref PeerHealthFunction
           Id: PeerHealthCheckv1
           Input: !Sub |
             {
@@ -46,7 +51,7 @@ Resources:
   PermissionForEventsToInvokeLambda: 
     Type: AWS::Lambda::Permission
     Properties: 
-      FunctionName: !Ref LambdaFunctionARN
+      FunctionName: !Ref PeerHealthFunction
       Action: lambda:InvokeFunction
       Principal: events.amazonaws.com
       SourceArn: 
@@ -69,7 +74,7 @@ Resources:
       ComparisonOperator: GreaterThanOrEqualToThreshold
       Dimensions:
         - Name: FunctionName
-          Value: !Ref LambdaFunctionARN
+          Value: !Ref PeerHealthFunction
       EvaluationPeriods: 1
       MetricName: Errors
       Namespace: AWS/Lambda
@@ -81,5 +86,11 @@ Outputs:
   ScheduledRule:
     Description: CW Scheduled Rule
     Value: !Ref ScheduledRule
-    Export:
-      Name: !Sub "${AWS::StackName}-ScheduledRule"
+
+  PeerHealthFunction:
+    Description: "Peer Health Lambda Function ARN"
+    Value: !GetAtt PeerHealthFunction.Arn
+
+  PeerHealthFunctionIamRole:
+    Description: "Implicit IAM Role created for Hello World function"
+    Value: !GetAtt PeerHealthFunctionRole.Arn

@@ -4,6 +4,14 @@ In this section we will deploy a Lambda function that checks the health of the A
 The Lambda function will return success if all the peer nodes in the Fabric network are AVAILABLE, otherwise it will
 return an error.
 
+## The Serverless Application Model
+I use SAM to deploy the Lambda function. This requires 2 steps:
+
+* Use SAM to generate the template folder structure for the Lambda. This is a one-off activity. I performed this
+using the instructions here: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-getting-started-hello-world.html
+* Use SAM to package and deploy the Lambda. This is done each time the Lambda is deployed, and will be done
+from the Fabric client node.
+
 ## Pre-requisites
 
 From Cloud9, SSH into the Fabric client node. The key (i.e. the .PEM file) should be in your home directory. 

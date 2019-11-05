@@ -1,5 +1,5 @@
 {
-    "name": "health-lambda",
+    "name": "peer-health-lambda",
     "version": "1.0.0",
     "description": "Lambda function to health check peer nodes in a Fabric network",
     "main": "index.js",

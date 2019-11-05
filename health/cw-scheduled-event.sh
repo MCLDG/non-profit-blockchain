@@ -13,11 +13,28 @@
 # express or implied. See the License for the specific language governing 
 # permissions and limitations under the License.
 
-echo Creating a CW Scheduled Event to trigger the peer health check Lambda
+# Uses SAM (serverless application model) to deploy the peer health check Lambda function
 
-functionarn=$(aws lambda get-function --function-name health-function --region $REGION --query 'Configuration.FunctionArn' --output text)
+echo Install homebrew, used to install the SAM CLI
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/Linuxbrew/install/master/install.sh)"
+test -d ~/.linuxbrew && eval $(~/.linuxbrew/bin/brew shellenv)
+test -d /home/linuxbrew/.linuxbrew && eval $(/home/linuxbrew/.linuxbrew/bin/brew shellenv)
+test -r ~/.bash_profile && echo "eval \$($(brew --prefix)/bin/brew shellenv)" >>~/.bash_profile
+echo "eval \$($(brew --prefix)/bin/brew shellenv)" >>~/.profile
+brew --version
 
-aws cloudformation deploy --stack-name $NETWORKNAME-cw-scheduled-event --template-file cw-scheduled-event.yaml \
---capabilities CAPABILITY_NAMED_IAM \
---parameter-overrides NetworkId=$NETWORKID MemberId=$MEMBERID LambdaFunctionARN=$functionarn \
---region $REGION
+echo Install the SAM CLI
+brew tap aws/tap
+brew install aws-sam-cli
+sam --version
+
+echo Using SAM to build and deploy the Lambda function
+aws s3 mb s3://$NETWORKNAME-peer-health --region $REGION  
+sam build
+
+#Step 3 - Package your application
+sam package --output-template peer-health.yaml --s3-bucket bucketname
+
+#Step 4 - Deploy your application
+sam deploy --template-file peer-health.yaml --region $REGION --capabilities CAPABILITY_IAM --stack-name $NETWORKNAME-peer-health-lambda \
+--parameter-overrides NetworkId=$NETWORKID MemberId=$MEMBERID

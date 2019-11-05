@@ -15,6 +15,16 @@
 
 # Uses SAM (serverless application model) to deploy the peer health check Lambda function
 
+if [ -z "$NETWORKNAME" || -z "$REGION" || -z "$MEMBERID"]
+then
+      echo "Environment variables \$NETWORKNAME, \$MEMBERID or \$REGION are empty. Please see the pre-requisites in the README"
+fi
+
+if [ -z "$SNSEMAIL" ]
+then
+      echo "\$SNSEMAIL is empty. Please see the pre-requisites in the README"
+fi
+
 echo Install homebrew, used to install the SAM CLI
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/Linuxbrew/install/master/install.sh)"
 test -d ~/.linuxbrew && eval $(~/.linuxbrew/bin/brew shellenv)
@@ -37,4 +47,4 @@ sam package --output-template peer-health.yaml --s3-bucket $NETWORKNAME-peer-hea
 
 #Step 4 - Deploy your application
 sam deploy --template-file peer-health.yaml --region $REGION --capabilities CAPABILITY_IAM --stack-name $NETWORKNAME-peer-health-lambda \
---parameter-overrides NetworkId=$NETWORKID MemberId=$MEMBERID
+--parameter-overrides NetworkId=$NETWORKID MemberId=$MEMBERID NotificationEmail=$SNSEMAIL

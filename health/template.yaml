@@ -23,6 +23,10 @@ Parameters:
   MemberId:
     Description: The member ID you want to execute the health check against
     Type: String
+  NotificationEmail:
+    Description: Email address to send notifications to
+    Type: String
+
 
 Resources:
   PeerHealthFunction:

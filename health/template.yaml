@@ -45,7 +45,7 @@ Resources:
       Targets: 
         - 
           Arn: 
-            !Ref PeerHealthFunction
+            !GetAtt PeerHealthFunction.Arn
           Id: PeerHealthCheckv1
           Input: !Sub |
             {

@@ -15,7 +15,7 @@
 
 # Uses SAM (serverless application model) to deploy the peer health check Lambda function
 
-if [ -z "$NETWORKNAME" || -z "$REGION" || -z "$MEMBERID"]
+if [ -z "$NETWORKNAME" ]
 then
       echo "Environment variables \$NETWORKNAME, \$MEMBERID or \$REGION are empty. Please see the pre-requisites in the README"
 fi

@@ -37,7 +37,7 @@ Resources:
       Runtime: nodejs8.10
       Role:
         Fn::GetAtt:
-        - LambdaExecutionRole
+        - PeerHealthFunctionRole
         - Arn
 
   PeerHealthFunctionRole:

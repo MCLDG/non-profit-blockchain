@@ -33,7 +33,7 @@ aws s3 mb s3://$NETWORKNAME-peer-health --region $REGION
 sam build
 
 #Step 3 - Package your application
-sam package --output-template peer-health.yaml --s3-bucket bucketname
+sam package --output-template peer-health.yaml --s3-bucket $NETWORKNAME-peer-health
 
 #Step 4 - Deploy your application
 sam deploy --template-file peer-health.yaml --region $REGION --capabilities CAPABILITY_IAM --stack-name $NETWORKNAME-peer-health-lambda \

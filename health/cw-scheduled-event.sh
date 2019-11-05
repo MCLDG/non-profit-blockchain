@@ -40,6 +40,7 @@ sam --version
 
 echo Using SAM to build and deploy the Lambda function
 aws s3 mb s3://$NETWORKNAME-peer-health --region $REGION  
+nvm use lts/carbon
 sam build
 
 #Step 3 - Package your application

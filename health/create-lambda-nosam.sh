@@ -46,4 +46,4 @@ echo Deploy the Lambda function
 cd ..
 aws cloudformation deploy --template-file peer-health-template.yaml --region $REGION --capabilities CAPABILITY_IAM \
 --stack-name $NETWORKNAME-peer-health-lambda \
---parameter-overrides NetworkId=$NETWORKID MemberId=$MEMBERID NotificationEmail=$SNSEMAIL
+--parameter-overrides NetworkId=$NETWORKID NetworkName=$NETWORKNAME MemberId=$MEMBERID NotificationEmail=$SNSEMAIL

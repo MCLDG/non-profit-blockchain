@@ -9,6 +9,9 @@ Parameters:
     Description: The network ID of the Amazon Managed Blockchain network you want
       to execute the health check against
     Type: String
+  NetworkName:
+    Description: The network name matching the network ID
+    Type: String
   MemberId:
     Description: The member ID you want to execute the health check against
     Type: String
@@ -20,7 +23,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: !Sub | 
-        s3://${NetworkId}-peer-health
+        s3://${NetworkName}-peer-health/peer-health
       Handler: app.handler
       Runtime: nodejs8.10
       Role:

@@ -24,7 +24,7 @@ Resources:
     Properties:
       CodeUri: 
         Bucket: !Sub | 
-          s3://${NetworkName}-peer-health
+          ${NetworkName}-peer-health
         Key: peer-health.zip
       Handler: app.handler
       Runtime: nodejs8.10

@@ -15,38 +15,31 @@
 
 # Uses SAM (serverless application model) to deploy the peer health check Lambda function
 
+if [ -z "$NETWORKID" ]
+then
+      echo "Environment variables \$NETWORKID, \$MEMBERID or \$REGION are empty. Please see the pre-requisites in the README"
+fi
+
 if [ -z "$NETWORKNAME" ]
 then
-      echo "Environment variables \$NETWORKNAME, \$MEMBERID or \$REGION are empty. Please see the pre-requisites in the README"
+      echo "Environment variable \$NETWORKNAME is empty. Please see the pre-requisites in the README"
 fi
 
 if [ -z "$SNSEMAIL" ]
 then
-      echo "\$SNSEMAIL is empty. Please see the pre-requisites in the README"
+      echo "Environment variable \$SNSEMAIL is empty. Please see the pre-requisites in the README"
 fi
 
-echo Install homebrew, used to install the SAM CLI
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/Linuxbrew/install/master/install.sh)"
-test -d ~/.linuxbrew && eval $(~/.linuxbrew/bin/brew shellenv)
-test -d /home/linuxbrew/.linuxbrew && eval $(/home/linuxbrew/.linuxbrew/bin/brew shellenv)
-test -r ~/.bash_profile && echo "eval \$($(brew --prefix)/bin/brew shellenv)" >>~/.bash_profile
-echo "eval \$($(brew --prefix)/bin/brew shellenv)" >>~/.profile
-brew --version
+echo Build the Lambda function and copy to S3
+BUCKETNAME=`echo "$NETWORKNAME-peer-health" | tr '[:upper:]' '[:lower:]'`
+aws s3 mb s3://$BUCKETNAME --region $REGION  
 
-echo Install the SAM CLI
-brew tap aws/tap
-brew install aws-sam-cli
-sam --version
+aws cloudformation package --template-file peer-health-template.yaml \
+      --output-template-file packaged-peer-health-template.yaml \
+      --s3-bucket $BUCKETNAME
 
-echo Using SAM to build and deploy the Lambda function
-aws s3 mb s3://$NETWORKNAME-peer-health --region $REGION  
-. ~/.nvm/nvm.sh
-nvm use lts/carbon
-sam build
-
-#Step 3 - Package your application
-sam package --output-template peer-health.yaml --s3-bucket $NETWORKNAME-peer-health
-
-#Step 4 - Deploy your application
-sam deploy --template-file peer-health.yaml --region $REGION --capabilities CAPABILITY_IAM --stack-name $NETWORKNAME-peer-health-lambda \
---parameter-overrides NetworkId=$NETWORKID MemberId=$MEMBERID NotificationEmail=$SNSEMAIL
+echo Deploy the Lambda function
+aws cloudformation deploy --template-file packaged-peer-health-template.yaml \
+      --region $REGION --capabilities CAPABILITY_IAM \
+      --stack-name $NETWORKNAME-peer-health-lambda \
+      --parameter-overrides NetworkId=$NETWORKID MemberId=$MEMBERID NotificationEmail=$SNSEMAIL

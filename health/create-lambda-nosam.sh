@@ -22,23 +22,25 @@ fi
 
 if [ -z "$NETWORKNAME" ]
 then
-      echo "Environment variables \$NETWORKID, \$MEMBERID or \$REGION are empty. Please see the pre-requisites in the README"
+      echo "Environment variable \$NETWORKNAME is empty. Please see the pre-requisites in the README"
 fi
 
 if [ -z "$SNSEMAIL" ]
 then
-      echo "\$SNSEMAIL is empty. Please see the pre-requisites in the README"
+      echo "Environment variable \$SNSEMAIL is empty. Please see the pre-requisites in the README"
 fi
 
 echo Build the Lambda function and copy to S3
-aws s3 mb s3://$NETWORKID-peer-health --region $REGION  
+BUCKETNAME=`echo "s3://$NETWORKNAME-peer-health" | tr '[:upper:]' '[:lower:]'`
+echo Copying Lambda to S3 bucket $BUCKETNAME
+aws s3 mb s3://$BUCKETNAME --region $REGION  
 mkdir -p ./build
 cp -R peer-health tmp
 . ~/.nvm/nvm.sh
 nvm use lts/carbon
 cd build
 npm install
-aws s3 cp . s3://$NETWORKID-peer-health --region $REGION --recursive
+aws s3 cp . s3://$BUCKETNAME --region $REGION --recursive
 
 echo Deploy the Lambda function
 aws cloudformation deploy --template-file peer-health-template.yaml --region $REGION --capabilities CAPABILITY_IAM \

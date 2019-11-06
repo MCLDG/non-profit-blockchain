@@ -50,7 +50,6 @@ aws cloudformation package --template-file peer-health-template.yaml \
 
 
 echo Deploy the Lambda function
-cd ..
 aws cloudformation deploy --template-file packaged-peer-health-template.yaml \
       --region $REGION --capabilities CAPABILITY_IAM \
       --stack-name $NETWORKNAME-peer-health-lambda \

@@ -34,6 +34,7 @@ echo Build the Lambda function and copy to S3
 BUCKETNAME=`echo "$NETWORKNAME-peer-health" | tr '[:upper:]' '[:lower:]'`
 aws s3 mb s3://$BUCKETNAME --region $REGION
 cd peer-health
+rm -rf node_modules
 . ~/.nvm/nvm.sh
 nvm use lts/carbon
 npm install

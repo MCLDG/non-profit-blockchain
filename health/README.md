@@ -2,11 +2,14 @@
 
 In this section we will deploy a Lambda function that checks the health of the Amazon Managed Blockchain peer nodes.
 The Lambda function will return success if all the peer nodes in the Fabric network are AVAILABLE, otherwise it will
-return an error. An error will result in an SNS notification routed to an email address. The Lambda will be automatically 
+return an error. It will ignore peer nodes that have a status of CREATING or DELETED. 
+
+An error from the Lambda will result in an SNS notification routed to an email address. The Lambda will be automatically 
 invoked by a CloudWatch scheduled event.
 
 CloudFormation and the Serverless Application Model (SAM) is used to package and deploy the Lambda function. More details
-on SAM can be found here: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-getting-started.html
+on SAM can be found here: https://aws.amazon.com/serverless/sam/, however, note that I'm not using the SAM CLI but rather the
+equivalent `aws cloudformation` commands.
 
 ## Pre-requisites
 
@@ -46,7 +49,7 @@ export SNSEMAIL=youremail@yourdomain.com
 ```
 
 ## Overview
-The CloudFormation template is named `template.yaml`. It will create the Lambda, the CW scheduled event, the SNS topic and the email subscription. To create the CloudFormation stack:
+The CloudFormation template is named `peer-health-template.yaml`. It will create the Lambda, the CW scheduled event, the SNS topic and the email subscription. To create the CloudFormation stack:
 
 ```
 cd ~/non-profit-blockchain/health

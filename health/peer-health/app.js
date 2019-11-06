@@ -69,17 +69,15 @@ exports.handler = async (event) => {
         logger.info("=== Handler Function End ===");
     }
     catch (err) {
-        logger.error('##### Error when checking health of peer nodes, returning HTTP 500: ' + err);
+        logger.error('##### Error when checking health of peer nodes, throwing an exception: ' + err);
         throw err;
-        // return {
-        //     'statusCode': 500,
-        //     'body': 'Error when checking health of peer nodes: ' + err,
-        //     'unavailablePeers': unavailablePeers
-        //   }
     }
     logger.debug('##### All peer nodes are healthy. Returning HTTP 200');
-    return {
+    response = {
         'statusCode': 200,
-        'body': data
-      }
+        'body': JSON.stringify({
+            data
+        })
+    }
+    return response;
 };

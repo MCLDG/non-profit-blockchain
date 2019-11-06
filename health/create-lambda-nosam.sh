@@ -31,7 +31,7 @@ then
 fi
 
 echo Build the Lambda function and copy to S3
-BUCKETNAME=`echo "s3://$NETWORKNAME-peer-health" | tr '[:upper:]' '[:lower:]'`
+BUCKETNAME=`echo "$NETWORKNAME-peer-health" | tr '[:upper:]' '[:lower:]'`
 echo Copying Lambda to S3 bucket $BUCKETNAME
 aws s3 mb s3://$BUCKETNAME --region $REGION  
 mkdir -p ./build

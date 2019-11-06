@@ -22,8 +22,10 @@ Resources:
   PeerHealthFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: !Sub | 
-        s3://${NetworkName}-peer-health/peer-health
+      Code:
+        S3Bucket: !Sub | 
+          s3://${NetworkName}-peer-health
+        S3Key: peer-health
       Handler: app.handler
       Runtime: nodejs8.10
       Role:

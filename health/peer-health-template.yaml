@@ -1,0 +1,120 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Amazon Managed Blockchain. Creates a peer health check Lambda function,
+  and a CW scheduled event that triggers the Lambda. Alarms are published to SNS
+Transform: AWS::Serverless-2016-10-31
+Metadata:
+  LICENSE: Apache License Version 2.0
+Parameters:
+  NetworkId:
+    Description: The network ID of the Amazon Managed Blockchain network you want
+      to execute the health check against
+    Type: String
+  MemberId:
+    Description: The member ID you want to execute the health check against
+    Type: String
+  NotificationEmail:
+    Description: Email address to send notifications to
+    Type: String
+Resources:
+  PeerHealthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: s3://${NetworkId}-peer-health
+      Handler: app.handler
+      Runtime: nodejs8.10
+      Role:
+        Fn::GetAtt:
+        - PeerHealthFunctionRole
+        - Arn
+  PeerHealthFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      Policies:
+      - PolicyName: root
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - managedblockchain:ListNodes
+            Resource: '*'
+          - Effect: Allow
+            Action:
+            - logs:*
+            Resource: arn:aws:logs:*:*:*
+  ScheduledRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: ScheduledRule
+      ScheduleExpression: rate(1 minute)
+      State: ENABLED
+      Targets:
+      - Arn:
+          Fn::GetAtt:
+          - PeerHealthFunction
+          - Arn
+        Id: PeerHealthCheckv1
+        Input:
+          Fn::Sub: "{\n  \"networkId\": \"${NetworkId}\",\n  \"memberId\": \"${MemberId}\"\
+            \n}\n"
+  PermissionForEventsToInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName:
+        Ref: PeerHealthFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn:
+        Fn::GetAtt:
+        - ScheduledRule
+        - Arn
+  AlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+      - Protocol: email
+        Endpoint:
+          Ref: NotificationEmail
+  Alarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - Ref: AlarmTopic
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+      - Name: FunctionName
+        Value:
+          Ref: PeerHealthFunction
+      EvaluationPeriods: 1
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Period: 60
+      Statistic: Sum
+      Threshold: '1'
+Outputs:
+  ScheduledRule:
+    Description: CW Scheduled Rule
+    Value:
+      Ref: ScheduledRule
+  PeerHealthFunction:
+    Description: Peer Health Lambda Function ARN
+    Value:
+      Fn::GetAtt:
+      - PeerHealthFunction
+      - Arn
+  PeerHealthFunctionIamRole:
+    Description: IAM Role for Peer Health Lambda Function
+    Value:
+      Fn::GetAtt:
+      - PeerHealthFunctionRole
+      - Arn

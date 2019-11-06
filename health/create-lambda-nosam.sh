@@ -40,7 +40,7 @@ cp -R peer-health build
 nvm use lts/carbon
 cd build
 npm install
-zip -r build/peer-health.zip  .
+zip -r peer-health.zip  .
 aws s3 cp peer-health.zip s3://$BUCKETNAME --region $REGION
 
 echo Deploy the Lambda function

@@ -44,11 +44,14 @@ aws s3 mb s3://$BUCKETNAME --region $REGION
 # zip -r peer-health.zip  .
 # aws s3 cp peer-health.zip s3://$BUCKETNAME --region $REGION
 
-aws cloudformation package --output-template peer-health.yaml --s3-bucket $BUCKETNAME
+aws cloudformation package --template-file peer-health-template.yaml \
+      --output-template-file packaged-peer-health-template.yaml \
+      --s3-bucket $BUCKETNAME
 
 
 echo Deploy the Lambda function
 cd ..
-aws cloudformation deploy --template-file peer-health.yaml --region $REGION --capabilities CAPABILITY_IAM \
---stack-name $NETWORKNAME-peer-health-lambda \
---parameter-overrides NetworkId=$NETWORKID MemberId=$MEMBERID NotificationEmail=$SNSEMAIL
+aws cloudformation deploy --template-file packaged-peer-health-template.yaml \
+      --region $REGION --capabilities CAPABILITY_IAM \
+      --stack-name $NETWORKNAME-peer-health-lambda \
+      --parameter-overrides NetworkId=$NETWORKID MemberId=$MEMBERID NotificationEmail=$SNSEMAIL

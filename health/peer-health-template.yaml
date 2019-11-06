@@ -9,9 +9,6 @@ Parameters:
     Description: The network ID of the Amazon Managed Blockchain network you want
       to execute the health check against
     Type: String
-  NetworkName:
-    Description: The network name matching the network ID
-    Type: String
   MemberId:
     Description: The member ID you want to execute the health check against
     Type: String

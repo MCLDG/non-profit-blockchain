@@ -32,8 +32,12 @@ fi
 
 echo Build the Lambda function and copy to S3
 BUCKETNAME=`echo "$NETWORKNAME-peer-health" | tr '[:upper:]' '[:lower:]'`
-aws s3 mb s3://$BUCKETNAME --region $REGION  
-
+aws s3 mb s3://$BUCKETNAME --region $REGION
+cd peer-health
+. ~/.nvm/nvm.sh
+nvm use lts/carbon
+npm install
+cd ..
 aws cloudformation package --template-file peer-health-template.yaml \
       --output-template-file packaged-peer-health-template.yaml \
       --s3-bucket $BUCKETNAME

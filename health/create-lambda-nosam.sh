@@ -35,7 +35,7 @@ BUCKETNAME=`echo "$NETWORKNAME-peer-health" | tr '[:upper:]' '[:lower:]'`
 echo Copying Lambda to S3 bucket $BUCKETNAME
 aws s3 mb s3://$BUCKETNAME --region $REGION  
 mkdir -p ./build
-cp -R peer-health tmp
+cp -R peer-health build
 . ~/.nvm/nvm.sh
 nvm use lts/carbon
 cd build
@@ -43,6 +43,7 @@ npm install
 aws s3 cp . s3://$BUCKETNAME --region $REGION --recursive
 
 echo Deploy the Lambda function
+cd ..
 aws cloudformation deploy --template-file peer-health-template.yaml --region $REGION --capabilities CAPABILITY_IAM \
 --stack-name $NETWORKNAME-peer-health-lambda \
 --parameter-overrides NetworkId=$NETWORKID MemberId=$MEMBERID NotificationEmail=$SNSEMAIL

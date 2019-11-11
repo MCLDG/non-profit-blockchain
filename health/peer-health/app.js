@@ -62,8 +62,6 @@ exports.handler = async (event) => {
                 peerUnavailable = true;
             }
             logger.debug('##### Looping through nodes in healthpeers. Node is : ' + JSON.stringify(node));
-            write to cloudwatch
-            peer name, status  
         }
         if (peerUnavailable)
             throw new Error('##### Peer node(s) unavailable: ' + unavailablePeers);

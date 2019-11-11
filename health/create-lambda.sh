@@ -35,7 +35,9 @@ BUCKETNAME=`echo "$NETWORKNAME-peer-health" | tr '[:upper:]' '[:lower:]'`
 aws s3 mb s3://$BUCKETNAME --region $REGION
 cd peer-health
 rm -rf node_modules
+curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.0/install.sh | bash
 . ~/.nvm/nvm.sh
+nvm install lts/carbon
 nvm use lts/carbon
 npm install
 cd ..

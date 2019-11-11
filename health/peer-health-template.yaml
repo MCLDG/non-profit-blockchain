@@ -22,6 +22,7 @@ Resources:
       CodeUri: ./peer-health
       Handler: app.handler
       Runtime: nodejs8.10
+      Timeout: 10
       Role:
         Fn::GetAtt:
         - PeerHealthFunctionRole

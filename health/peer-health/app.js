@@ -37,6 +37,7 @@ exports.handler = async (event) => {
     networkInfo.type = 'ManagedBlockchainNetworkInfo';
     networkInfo.networkId = networkId;
     networkInfo.members = [];
+    let nodeUnavailable = false;
 
     try {
         logger.info("=== Handler Function Start ===" + JSON.stringify(event, null, 2));
@@ -72,7 +73,6 @@ exports.handler = async (event) => {
             logger.info('##### About to call listNodes for network and member: ' + JSON.stringify(params));
             let nodes = await managedblockchain.listNodes(params).promise();
             logger.debug('##### Output of listNodes called during peer health check: ' + JSON.stringify(nodes));
-            let nodeUnavailable = false;
     
             let nodeInfo = [];
             for (let i = 0; i < nodes.Nodes.length; i++) {

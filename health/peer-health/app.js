@@ -34,7 +34,7 @@ exports.handler = async (event) => {
     let networkId = event.networkId;
     let unavailableNodes = [];
     let networkInfo = {};
-    networkInfo.type = 'ManagedBlockchainNetworkInfo';
+    networkInfo.type = 'ManagedBlockchainConsolidatedNetworkInfo';
     networkInfo.networkId = networkId;
     networkInfo.members = [];
     let nodeUnavailable = false;
@@ -94,6 +94,16 @@ exports.handler = async (event) => {
                 logger.debug('##### Looping through nodes in healthpeers. Node is : ' + JSON.stringify(node));
                 nodeInfo.push(nodeStatus);
             }
+            // Write out a log entry specifically for this node. Though we will write a complete status for the entire
+            // network at the end of the loop, to use a CloudWatch metric filter we will need each node in a separate log entry
+            let singleNodeInfo = {};
+            singleNodeInfo.type = 'ManagedBlockchainNodeInfo';
+            singleNodeInfo.networkId = networkId;
+            singleNodeInfo.member = memberStatus;
+            singleNodeInfo.node = nodeInfo;
+            logger.info('##### HealthCheck - Managed Blockchain network status: ' + JSON.stringify(singleNodeInfo));
+
+            // Store the node status for writing to the log after the loop is complete
             memberStatus.nodeInfo = nodeInfo;
             networkInfo.members.push(memberStatus);
         }

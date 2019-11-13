@@ -103,6 +103,31 @@ Resources:
       Period: 60
       Statistic: Sum
       Threshold: '1'
+  MetricFilter: 
+    Type: AWS::Logs::MetricFilter
+    Properties: 
+      LogGroupName: 
+        Ref: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${PeerHealthFunction}:*'
+      FilterPattern: "{ ( $.type = 'ManagedBlockchainNodeInfo' ) && ($.node.nodeStatus = 'UNAVAILABLE') }"
+      MetricTransformations: 
+        - 
+          DefaultValue: 0
+          MetricValue: "$."
+          MetricNamespace: "${NetworkId}/UnavailableNodes"
+          MetricName: "UnavailableNode"      
+  Alarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+      - Ref: AlarmTopic
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: 1
+      MetricName: UnavailableNode
+      Namespace: ${NetworkId}/UnavailableNodes
+      Period: 1
+      Statistic: Maximum
+      Threshold: '1'
+
 Outputs:
   ScheduledRule:
     Description: CW Scheduled Rule

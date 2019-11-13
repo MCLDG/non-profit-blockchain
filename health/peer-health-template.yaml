@@ -108,7 +108,7 @@ Resources:
     Properties: 
       LogGroupName: 
         !Sub /aws/lambda/${PeerHealthFunction}
-      FilterPattern: "{ ( $.type = 'ManagedBlockchainNodeInfo' ) && ($.node.nodeStatus = 'UNAVAILABLE') }"
+      FilterPattern: { ( $.type = "ManagedBlockchainNodeInfo" ) && ($.node.nodeStatus = "UNAVAILABLE") }
       MetricTransformations: 
         - 
           DefaultValue: 0

@@ -28,6 +28,7 @@
 const util = require("util");
 const AWS = require('aws-sdk');
 const managedblockchain = new AWS.ManagedBlockchain();
+const cloudwatch = new AWS.CloudWatch();
 const logger = require("./logging").getLogger("peer-health-Lambda");
 
 exports.handler = async (event) => {
@@ -73,7 +74,7 @@ exports.handler = async (event) => {
             logger.info('##### About to call listNodes for network and member: ' + JSON.stringify(params));
             let nodes = await managedblockchain.listNodes(params).promise();
             logger.debug('##### Output of listNodes called during peer health check: ' + JSON.stringify(nodes));
-    
+
             let nodeInfo = [];
             for (let i = 0; i < nodes.Nodes.length; i++) {
                 let node = nodes.Nodes[i];
@@ -83,6 +84,7 @@ exports.handler = async (event) => {
                 nodeStatus.nodeAvailabilityZone = node.AvailabilityZone;
                 nodeStatus.nodeInstanceType = node.InstanceType;
 
+                let nodeStatus = 1;
                 if (node.Status == 'DELETED') {
                     //TODO: code needs to look for nodes with a status of FAILED. All other status' should be ignored
                     //I use other status here for testing purposes only. It's difficult to FAIL a peer node, but easy to CREATE/DELETE
@@ -90,18 +92,49 @@ exports.handler = async (event) => {
                 else if (node.Status != 'AVAILABLE') {
                     unavailableNodes.push(node.Id + ' ' + node.Status);
                     nodeUnavailable = true;
+                    nodeStatus = 0;
                 }
                 logger.debug('##### Looping through nodes in healthpeers. Node is : ' + JSON.stringify(node));
                 nodeInfo.push(nodeStatus);
+
+                // Write out a log entry specifically for this node. Though we will write a complete status for the entire
+                // network at the end of the loop, to use a CloudWatch metric filter we will need each node in a separate log entry
+                let singleNodeInfo = {};
+                singleNodeInfo.type = 'ManagedBlockchainNodeInfo';
+                singleNodeInfo.networkId = networkId;
+                singleNodeInfo.member = memberStatus;
+                singleNodeInfo.node = nodeStatus;
+                logger.info('##### HealthCheck - Managed Blockchain network status: ' + JSON.stringify(singleNodeInfo));
+
+                // Publish a custom metric for each node to indidate whether available or not
+                var params = {
+                    Namespace: 'custom/managedblockchain',
+                    MetricData: [ 
+                        {
+                            MetricName: 'Availability', /* required */
+                            Dimensions: [
+                                {
+                                    Name: 'NetworkId', /* required */
+                                    Value: networkId
+                                },
+                                {
+                                    Name: 'MemberId', /* required */
+                                    Value: member.Id
+                                },
+                                {
+                                    Name: 'NodeId', /* required */
+                                    Value: node.Id
+                                },
+                             ],
+                            StorageResolution: '60',
+                            Unit: 'Count',
+                            Value: nodeStatus
+                        },
+                    ]
+                };
+                let cwMetric = await cloudwatch.putMetricData(params).promise();
+                logger.debug('##### Output of putMetricData called during peer health check: ' + JSON.stringify(cwMetric));
             }
-            // Write out a log entry specifically for this node. Though we will write a complete status for the entire
-            // network at the end of the loop, to use a CloudWatch metric filter we will need each node in a separate log entry
-            let singleNodeInfo = {};
-            singleNodeInfo.type = 'ManagedBlockchainNodeInfo';
-            singleNodeInfo.networkId = networkId;
-            singleNodeInfo.member = memberStatus;
-            singleNodeInfo.node = nodeInfo;
-            logger.info('##### HealthCheck - Managed Blockchain network status: ' + JSON.stringify(singleNodeInfo));
 
             // Store the node status for writing to the log after the loop is complete
             memberStatus.nodeInfo = nodeInfo;

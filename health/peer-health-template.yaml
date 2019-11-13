@@ -48,6 +48,7 @@ Resources:
           - Effect: Allow
             Action:
             - managedblockchain:ListNodes
+            - managedblockchain:ListMembers
             Resource: '*'
           - Effect: Allow
             Action:

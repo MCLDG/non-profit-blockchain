@@ -50,6 +50,7 @@ Resources:
             - managedblockchain:ListNodes
             - managedblockchain:ListMembers
             - cloudwatch:PutMetricData
+            - cloudwatch:PutMetricAlarm
             Resource: '*'
           - Effect: Allow
             Action:

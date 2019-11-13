@@ -4,9 +4,6 @@ In this section we will deploy a Lambda function that checks the health of the A
 The Lambda function will return success if all the peer nodes in the Fabric network are AVAILABLE, otherwise it will
 return an error. It will ignore peer nodes that have a status of CREATING, DELETING or DELETED. 
 
-The Lambda will also output log entries with the status of each peer node. This will allow the creation of CloudWatch
-alarms for each peer that has failed, in addition to an alarm for the cluster as a whole.
-
 An error from the Lambda will result in a CloudWatch alarm and an SNS notification routed to an email address. The 
 Lambda will be automatically invoked by a CloudWatch scheduled event.
 
@@ -14,6 +11,11 @@ In multi-member networks the peer-health check would typically run in each AWS a
 each account owner. Notifications would be provided regardless of the account owning the failed peer. This makes sense
 as transactions are typically sent to peers owned by other members for endorsement, so a member would need to know if
 other peer nodes owned by other members had failed.
+
+The Lambda also creates CW custom metrics and CW alarms per peer node. If the peer node is AVAILABLE the alarm status 
+will be OK, otherwise it will be set to ALARM. This is to allow notifications per peer node, and possibly a recovery
+process per peer that fails. If a single alarm was used for the entire Managed Blockchain network, it would only alarm
+once even if 2 peer nodes failed within a short period of time.
 
 CloudFormation and the Serverless Application Model (SAM) is used to package and deploy the Lambda function. More details
 on SAM can be found here: https://aws.amazon.com/serverless/sam/, however, note that I'm not using the SAM CLI but rather the

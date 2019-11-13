@@ -109,23 +109,31 @@ exports.handler = async (event) => {
                 // Publish a custom metric for each node to indidate whether available or not
                 let cwParams = {
                     Namespace: 'custom/managedblockchain',
-                    MetricData: [ 
+                    MetricData: [
                         {
-                            MetricName: 'Availability', /* required */
+                            MetricName: 'Availability',
                             Dimensions: [
                                 {
-                                    Name: 'NetworkId', /* required */
+                                    Name: 'NetworkId',
                                     Value: networkId
                                 },
                                 {
-                                    Name: 'MemberId', /* required */
+                                    Name: 'MemberId',
                                     Value: member.Id
                                 },
                                 {
-                                    Name: 'NodeId', /* required */
+                                    Name: 'AccountOwnsMember',
+                                    Value: member.IsOwned
+                                },
+                                {
+                                    Name: 'NodeId',
                                     Value: node.Id
                                 },
-                             ],
+                                {
+                                    Name: 'NodeInstanceType',
+                                    Value: node.InstanceType
+                                }
+                            ],
                             StorageResolution: '60',
                             Unit: 'Count',
                             Value: nodeAvailable
@@ -134,6 +142,46 @@ exports.handler = async (event) => {
                 };
                 let cwMetric = await cloudwatch.putMetricData(cwParams).promise();
                 logger.debug('##### Output of putMetricData called during peer health check: ' + JSON.stringify(cwMetric));
+
+                // Update the CW alarm. This should either set the alarm on or off, depending on whether the peer node is
+                // available or not
+                let cwAlarmParams = {
+                    AlarmName: 'NodeAvailability',
+                    ComparisonOperator: GreaterThanOrEqualToThreshold,
+                    EvaluationPeriods: '1',
+                    AlarmDescription: 'Alarm if managed blockchain peer node becomes UNAVAILABLE',
+                    Dimensions: [
+                        {
+                            Name: 'NetworkId',
+                            Value: networkId
+                        },
+                        {
+                            Name: 'MemberId',
+                            Value: member.Id
+                        },
+                        {
+                            Name: 'AccountOwnsMember',
+                            Value: member.IsOwned
+                        },
+                        {
+                            Name: 'NodeId',
+                            Value: node.Id
+                        },
+                        {
+                            Name: 'NodeInstanceType',
+                            Value: node.InstanceType
+                        }
+                    ],
+                    MetricName: 'Availability',
+                    Namespace: 'custom/managedblockchain',
+                    Period: '60',
+                    Statistic: 'Sum',
+                    Threshold: '1',
+                    TreatMissingData: 'missing'
+                };
+
+                let cwAlarm = await cloudwatch.putMetricAlarm(cwAlarmParams).promise();
+                logger.debug('##### Output of putMetricAlarm called during peer health check: ' + JSON.stringify(cwAlarmParams));
             }
 
             // Store the node status for writing to the log after the loop is complete

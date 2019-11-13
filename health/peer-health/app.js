@@ -147,7 +147,7 @@ exports.handler = async (event) => {
                 // available or not
                 let cwAlarmParams = {
                     AlarmName: 'NodeAvailability',
-                    ComparisonOperator: GreaterThanOrEqualToThreshold,
+                    ComparisonOperator: 'GreaterThanOrEqualToThreshold',
                     EvaluationPeriods: '1',
                     AlarmDescription: 'Alarm if managed blockchain peer node becomes UNAVAILABLE',
                     Dimensions: [

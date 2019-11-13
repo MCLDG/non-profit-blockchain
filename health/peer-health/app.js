@@ -146,7 +146,7 @@ exports.handler = async (event) => {
                 // Update the CW alarm. This should either set the alarm on or off, depending on whether the peer node is
                 // available or not
                 let cwAlarmParams = {
-                    AlarmName: 'NodeAvailability',
+                    AlarmName: 'NodeAvailability-' + node.Id,
                     ComparisonOperator: 'GreaterThanOrEqualToThreshold',
                     EvaluationPeriods: '1',
                     AlarmDescription: 'Alarm if managed blockchain peer node becomes UNAVAILABLE',

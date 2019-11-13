@@ -107,7 +107,7 @@ Resources:
     Type: AWS::Logs::MetricFilter
     Properties: 
       LogGroupName: 
-        Ref: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${PeerHealthFunction}:*'
+        !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${PeerHealthFunction}:*'
       FilterPattern: "{ ( $.type = 'ManagedBlockchainNodeInfo' ) && ($.node.nodeStatus = 'UNAVAILABLE') }"
       MetricTransformations: 
         - 

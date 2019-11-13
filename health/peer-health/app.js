@@ -32,7 +32,6 @@ const logger = require("./logging").getLogger("peer-health-Lambda");
 
 exports.handler = async (event) => {
     let networkId = event.networkId;
-    let data;
     let unavailableNodes = [];
     let networkInfo = {};
     networkInfo.type = 'ManagedBlockchainNetworkInfo';
@@ -48,10 +47,10 @@ exports.handler = async (event) => {
 
         logger.info('##### About to call listMembers: ' + JSON.stringify(params));
         let members = await managedblockchain.listMembers(params).promise();
-        logger.debug('##### Output of listMembers called during peer health check: ' + JSON.stringify(data));
+        logger.debug('##### Output of listMembers called during peer health check: ' + JSON.stringify(members));
 
         for (let i = 0; i < members.Members.length; i++) {
-            let member = data.Members[i];
+            let member = members.Members[i];
             let memberStatus = {};
             memberStatus.memberId = member.Id;
             memberStatus.memberName = member.Name;
@@ -72,12 +71,12 @@ exports.handler = async (event) => {
 
             logger.info('##### About to call listNodes for network and member: ' + JSON.stringify(params));
             let nodes = await managedblockchain.listNodes(params).promise();
-            logger.debug('##### Output of listNodes called during peer health check: ' + JSON.stringify(data));
+            logger.debug('##### Output of listNodes called during peer health check: ' + JSON.stringify(nodes));
             let nodeUnavailable = false;
     
             let nodeInfo = [];
-            for (let i = 0; i < data.Nodes.length; i++) {
-                let node = data.Nodes[i];
+            for (let i = 0; i < nodes.Nodes.length; i++) {
+                let node = nodes.Nodes[i];
                 let nodeStatus = {};
                 nodeStatus.Id = node.Id;
                 nodeStatus.nodeStatus = node.Status;

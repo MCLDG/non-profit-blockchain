@@ -19,8 +19,7 @@
     argument to this function looks as follows:
 
     {
-        "networkId": "n-6HQQS33ZMVAGJG7CISVGFNWIPU",
-        "memberId": "m-QIQPG3G2PZEERHCPVFLYH6ZN54"
+        "networkId": "n-6HQQS33ZMVAGJG7CISVGFNWIPU"
     }
 */
 
@@ -33,50 +32,89 @@ const logger = require("./logging").getLogger("peer-health-Lambda");
 
 exports.handler = async (event) => {
     let networkId = event.networkId;
-    let memberId = event.memberId;
     let data;
-    let unavailablePeers = [];
+    let unavailableNodes = [];
+    let networkInfo = {};
+    networkInfo.type = 'ManagedBlockchainNetworkInfo';
+    networkInfo.networkId = networkId;
+    networkInfo.members = [];
 
     try {
         logger.info("=== Handler Function Start ===" + JSON.stringify(event, null, 2));
 
-        var params = {
-            MemberId: memberId,
+        let params = {
             NetworkId: networkId
         };
 
-        logger.info('##### About to call listNodes: ' + JSON.stringify(params));
-        data = await managedblockchain.listNodes(params).promise();
-        logger.debug('##### Output of listNodes called during peer health check: ' + JSON.stringify(data));
-        var peerUnavailable = false;
+        logger.info('##### About to call listMembers: ' + JSON.stringify(params));
+        let members = await managedblockchain.listMembers(params).promise();
+        logger.debug('##### Output of listMembers called during peer health check: ' + JSON.stringify(data));
 
-        //TODO: code needs to look for nodes with a status of FAILED. All other status' should be ignored
-        //I use other status here for testing purposes only. It's difficult to FAIL a peer node, but easy to CREATE/DELETE
-        for (var i = 0; i < data.Nodes.length; i++) {
-            var node = data.Nodes[i];
-            if (node.Status == 'DELETED') {
-                // ignore deleted nodes
+        for (let i = 0; i < members.Members.length; i++) {
+            let member = data.Members[i];
+            let memberStatus = {};
+            memberStatus.memberId = member.Id;
+            memberStatus.memberName = member.Name;
+            memberStatus.memberStatus = member.Status;
+            memberStatus.memberIsOwned = member.IsOwned;
+
+            if (member.Status != 'AVAILABLE') {
+                // ignore members with other status'
+                logger.info('##### Member: ' + member.Id + ' is not AVAILABLE, and will be ignored. Member details are: ' + JSON.stringify(member));
+                networkInfo.members.push(memberStatus);
+                continue;
             }
-            else if (node.Status != 'AVAILABLE') {
-                unavailablePeers.push(node.Id + ' ' + node.Status);
-                peerUnavailable = true;
+
+            let params = {
+                NetworkId: networkId,
+                MemberId: member.Id
+            };
+
+            logger.info('##### About to call listNodes for network and member: ' + JSON.stringify(params));
+            let nodes = await managedblockchain.listNodes(params).promise();
+            logger.debug('##### Output of listNodes called during peer health check: ' + JSON.stringify(data));
+            let nodeUnavailable = false;
+    
+            let nodeInfo = [];
+            for (let i = 0; i < data.Nodes.length; i++) {
+                let node = data.Nodes[i];
+                let nodeStatus = {};
+                nodeStatus.Id = node.Id;
+                nodeStatus.nodeStatus = node.Status;
+                nodeStatus.nodeAvailabilityZone = node.AvailabilityZone;
+                nodeStatus.nodeInstanceType = node.InstanceType;
+
+                if (node.Status == 'DELETED') {
+                    //TODO: code needs to look for nodes with a status of FAILED. All other status' should be ignored
+                    //I use other status here for testing purposes only. It's difficult to FAIL a peer node, but easy to CREATE/DELETE
+                }
+                else if (node.Status != 'AVAILABLE') {
+                    unavailableNodes.push(node.Id + ' ' + node.Status);
+                    nodeUnavailable = true;
+                }
+                logger.debug('##### Looping through nodes in healthpeers. Node is : ' + JSON.stringify(node));
+                nodeInfo.push(nodeStatus);
             }
-            logger.debug('##### Looping through nodes in healthpeers. Node is : ' + JSON.stringify(node));
+            memberStatus.nodeInfo = nodeInfo;
+            networkInfo.members.push(memberStatus);
         }
-        if (peerUnavailable)
-            throw new Error('##### Peer node(s) unavailable: ' + unavailablePeers);
+
+        logger.info('##### HealthCheck - Managed Blockchain network status: ' + JSON.stringify(networkInfo));
+
+        if (nodeUnavailable)
+            throw new Error('##### Managed blockchain node(s) unavailable: ' + unavailableNodes);
 
         logger.info("=== Handler Function End ===");
     }
     catch (err) {
-        logger.error('##### Error when checking health of peer nodes, throwing an exception: ' + err);
+        logger.error('##### Error when checking health of blockchain nodes, throwing an exception: ' + err);
         throw err;
     }
-    logger.debug('##### All peer nodes are healthy. Returning HTTP 200');
+    logger.debug('##### All nodes are healthy. Returning HTTP 200');
     let response = {
         'statusCode': 200,
         'body': JSON.stringify({
-            data
+            networkInfo
         })
     }
     return response;

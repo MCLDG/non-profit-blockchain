@@ -123,7 +123,7 @@ exports.handler = async (event) => {
                                 },
                                 {
                                     Name: 'AccountOwnsMember',
-                                    Value: member.IsOwned
+                                    Value: member.IsOwned.toString()
                                 },
                                 {
                                     Name: 'NodeId',
@@ -161,7 +161,7 @@ exports.handler = async (event) => {
                         },
                         {
                             Name: 'AccountOwnsMember',
-                            Value: member.IsOwned
+                            Value: member.IsOwned.toString()
                         },
                         {
                             Name: 'NodeId',

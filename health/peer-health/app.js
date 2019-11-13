@@ -107,7 +107,7 @@ exports.handler = async (event) => {
                 logger.info('##### HealthCheck - Managed Blockchain network status: ' + JSON.stringify(singleNodeInfo));
 
                 // Publish a custom metric for each node to indidate whether available or not
-                var params = {
+                let cwParams = {
                     Namespace: 'custom/managedblockchain',
                     MetricData: [ 
                         {
@@ -132,7 +132,7 @@ exports.handler = async (event) => {
                         },
                     ]
                 };
-                let cwMetric = await cloudwatch.putMetricData(params).promise();
+                let cwMetric = await cloudwatch.putMetricData(cwParams).promise();
                 logger.debug('##### Output of putMetricData called during peer health check: ' + JSON.stringify(cwMetric));
             }
 

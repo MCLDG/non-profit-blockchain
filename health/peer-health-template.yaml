@@ -112,7 +112,7 @@ Resources:
       MetricTransformations: 
         - 
           DefaultValue: 0
-          MetricValue: "$."
+          MetricValue: "1"
           MetricNamespace: !Sub ${NetworkId}/UnavailableNodes
           MetricName: UnavailableNode   
   Alarm:

@@ -2,10 +2,18 @@
 
 In this section we will deploy a Lambda function that checks the health of the Amazon Managed Blockchain peer nodes.
 The Lambda function will return success if all the peer nodes in the Fabric network are AVAILABLE, otherwise it will
-return an error. It will ignore peer nodes that have a status of CREATING or DELETED. 
+return an error. It will ignore peer nodes that have a status of CREATING, DELETING or DELETED. 
 
-An error from the Lambda will result in an SNS notification routed to an email address. The Lambda will be automatically 
-invoked by a CloudWatch scheduled event.
+The Lambda will also output log entries with the status of each peer node. This will allow the creation of CloudWatch
+alarms for each peer that has failed, in addition to an alarm for the cluster as a whole.
+
+An error from the Lambda will result in a CloudWatch alarm and an SNS notification routed to an email address. The 
+Lambda will be automatically invoked by a CloudWatch scheduled event.
+
+In multi-member networks the peer-health check would typically run in each AWS account, providing notifications to 
+each account owner. Notifications would be provided regardless of the account owning the failed peer. This makes sense
+as transactions are typically sent to peers owned by other members for endorsement, so a member would need to know if
+other peer nodes owned by other members had failed.
 
 CloudFormation and the Serverless Application Model (SAM) is used to package and deploy the Lambda function. More details
 on SAM can be found here: https://aws.amazon.com/serverless/sam/, however, note that I'm not using the SAM CLI but rather the
@@ -49,7 +57,7 @@ export SNSEMAIL=youremail@yourdomain.com
 ```
 
 ## Overview
-The CloudFormation template is named `peer-health-template.yaml`. It will create the Lambda, the CW scheduled event, the SNS topic and the email subscription. To create the CloudFormation stack:
+The CloudFormation template is named `peer-health-template.yaml`. It will create the Lambda, the CW scheduled event, the SNS topic and the email subscription. Before creating the CloudFormation stack, update the BUCKETNAME in `create-lambda.sh` to be a unique bucket name:
 
 ```
 cd ~/non-profit-blockchain/health

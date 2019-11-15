@@ -9,9 +9,6 @@ Parameters:
     Description: The network ID of the Amazon Managed Blockchain network you want
       to execute the health check against
     Type: String
-  MemberId:
-    Description: The member ID you want to execute the health check against
-    Type: String
   NotificationEmail:
     Description: Email address to send notifications to
     Type: String
@@ -69,8 +66,7 @@ Resources:
           - Arn
         Id: PeerHealthCheckv1
         Input:
-          Fn::Sub: "{\n  \"networkId\": \"${NetworkId}\",\n  \"memberId\": \"${MemberId}\"\
-            \n}\n"
+          Fn::Sub: "{\n  \"networkId\": \"${NetworkId}\",\n  }\n"
   PermissionForEventsToInvokeLambda:
     Type: AWS::Lambda::Permission
     Properties:

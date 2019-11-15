@@ -88,6 +88,7 @@ exports.handler = async (event) => {
                 if (node.Status == 'DELETED') {
                     //TODO: code needs to look for nodes with a status of FAILED. All other status' should be ignored
                     //I use other status here for testing purposes only. It's difficult to FAIL a peer node, but easy to CREATE/DELETE
+                    nodeAvailable = 0;
                 }
                 else if (node.Status != 'AVAILABLE') {
                     unavailableNodes.push(node.Id + ' ' + node.Status);

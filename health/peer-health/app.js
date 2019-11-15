@@ -29,10 +29,12 @@ const util = require("util");
 const AWS = require('aws-sdk');
 const managedblockchain = new AWS.ManagedBlockchain();
 const cloudwatch = new AWS.CloudWatch();
+const cloudformation = new AWS.CloudFormation();
 const logger = require("./logging").getLogger("peer-health-Lambda");
 
 exports.handler = async (event) => {
     let networkId = event.networkId;
+    let networkName = event.networkName;
     let unavailableNodes = [];
     let networkInfo = {};
     networkInfo.type = 'ManagedBlockchainConsolidatedNetworkInfo';
@@ -135,6 +137,18 @@ exports.handler = async (event) => {
                 let cwMetric = await cloudwatch.putMetricData(cwParams).promise();
                 logger.debug('##### Output of putMetricData called during peer health check: ' + JSON.stringify(cwMetric));
 
+                // Get the ARN of the SNS Topic created in the peer-heatlh CloudFormation stack. The alarm will be published
+                // to this topic
+                var stackParams = {
+                    'StackName': networkName + '-peer-health-lambda'
+                };
+                let snsTopicName;
+                let stackInfo = await cloudformation.describeStacks(stackParams).promise();
+                for (let i = 0; i < stackInfo.Stacks[0].Outputs; i++) {
+                    if (stackInfo.Stacks[0].Outputs[i].OutputKey == "PeerNodeAlarmTopic")
+                        snsTopicName = stackInfo.Stacks[0].Outputs[i].OutputValue
+                }
+                
                 // Update the CW alarm. This should either set the alarm on or off, depending on whether the peer node is
                 // available or not
                 let cwAlarmParams = {
@@ -142,6 +156,8 @@ exports.handler = async (event) => {
                     ComparisonOperator: 'LessThanThreshold',
                     EvaluationPeriods: '1',
                     AlarmDescription: 'Alarm if managed blockchain peer node becomes UNAVAILABLE',
+                    ActionsEnabled: true,
+                    AlarmActions: [snsTopicName],
                     Dimensions: [
                         {
                             Name: 'NetworkId',

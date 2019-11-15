@@ -9,6 +9,10 @@ Parameters:
     Description: The network ID of the Amazon Managed Blockchain network you want
       to execute the health check against
     Type: String
+  NetworkName:
+    Description: The network name of the Amazon Managed Blockchain network you want
+      to execute the health check against
+    Type: String
   NotificationEmail:
     Description: Email address to send notifications to
     Type: String
@@ -48,6 +52,7 @@ Resources:
             - managedblockchain:ListMembers
             - cloudwatch:PutMetricData
             - cloudwatch:PutMetricAlarm
+            - cloudformation:describeStacks
             Resource: '*'
           - Effect: Allow
             Action:
@@ -66,7 +71,7 @@ Resources:
           - Arn
         Id: PeerHealthCheckv1
         Input:
-          Fn::Sub: "{\n  \"networkId\": \"${NetworkId}\"\n  }\n"
+          Fn::Sub: "{\n  \"networkId\": \"${NetworkId}\",\n \"networkName\": \"${NetworkName}\"\n  }\n"
   PermissionForEventsToInvokeLambda:
     Type: AWS::Lambda::Permission
     Properties:
@@ -78,7 +83,14 @@ Resources:
         Fn::GetAtt:
         - ScheduledRule
         - Arn
-  AlarmTopic:
+  GeneralAlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+      - Protocol: email
+        Endpoint:
+          Ref: NotificationEmail
+  PeerNodeAlarmTopic:
     Type: AWS::SNS::Topic
     Properties:
       Subscription:
@@ -89,7 +101,7 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmActions:
-      - Ref: AlarmTopic
+      - Ref: GeneralAlarmTopic
       ComparisonOperator: GreaterThanOrEqualToThreshold
       Dimensions:
       - Name: FunctionName
@@ -118,4 +130,10 @@ Outputs:
     Value:
       Fn::GetAtt:
       - PeerHealthFunctionRole
+      - Arn
+  PeerNodeAlarmTopic:
+    Description: Topic ARN for pushing peer node specific alarms. See the code in the peer health Lambda function 
+    Value:
+      Fn::GetAtt:
+      - PeerNodeAlarmTopic
       - Arn

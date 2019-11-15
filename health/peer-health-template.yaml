@@ -66,7 +66,7 @@ Resources:
           - Arn
         Id: PeerHealthCheckv1
         Input:
-          Fn::Sub: "{\n  \"networkId\": \"${NetworkId}\",\n  }\n"
+          Fn::Sub: "{\n  \"networkId\": \"${NetworkId}\"\n  }\n"
   PermissionForEventsToInvokeLambda:
     Type: AWS::Lambda::Permission
     Properties:

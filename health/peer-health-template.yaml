@@ -134,6 +134,4 @@ Outputs:
   PeerNodeAlarmTopic:
     Description: Topic ARN for pushing peer node specific alarms. See the code in the peer health Lambda function 
     Value:
-      Fn::GetAtt:
-      - PeerNodeAlarmTopic
-      - Arn
+      Ref: PeerNodeAlarmTopic

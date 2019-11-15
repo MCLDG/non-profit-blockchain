@@ -41,7 +41,7 @@ exports.handler = async (event) => {
     let nodeUnavailable = false;
 
     try {
-        logger.info("=== Handler Function Start ===" + JSON.stringify(event, null, 2));
+        logger.info("=== Handler Function Start at timestamp: " + new Date().toISOString() + ' ' + JSON.stringify(event, null, 2));
 
         let params = {
             NetworkId: networkId
@@ -186,7 +186,7 @@ exports.handler = async (event) => {
         if (nodeUnavailable)
             throw new Error('##### Managed blockchain node(s) unavailable: ' + unavailableNodes);
 
-        logger.info("=== Handler Function End ===");
+        logger.info("=== Handler Function End at timestamp: " + new Date().toISOString());
     }
     catch (err) {
         logger.error('##### Error when checking health of blockchain nodes, throwing an exception: ' + err);

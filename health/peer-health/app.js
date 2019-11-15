@@ -138,13 +138,16 @@ exports.handler = async (event) => {
                 logger.debug('##### Output of putMetricData called during peer health check: ' + JSON.stringify(cwMetric));
 
                 // Get the ARN of the SNS Topic created in the peer-heatlh CloudFormation stack. The alarm will be published
-                // to this topic
+                // to this topic. If the code below does not find the topic, the alarm is still created, though it has no
+                // topic subscription
                 var stackParams = {
                     'StackName': networkName + '-peer-health-lambda'
                 };
                 let snsTopicName;
                 let stackInfo = await cloudformation.describeStacks(stackParams).promise();
+                logger.debug('##### Stackinfo: ' + JSON.stringify(stackInfo));
                 for (let i = 0; i < stackInfo.Stacks[0].Outputs; i++) {
+                    logger.debug('##### Stack key and value for i: ' + i + ' ' + stackInfo.Stacks[0].Outputs[i].OutputKey + ' ' + stackInfo.Stacks[0].Outputs[i].OutputValue);
                     if (stackInfo.Stacks[0].Outputs[i].OutputKey == "PeerNodeAlarmTopic")
                         snsTopicName = stackInfo.Stacks[0].Outputs[i].OutputValue
                 }

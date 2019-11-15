@@ -146,7 +146,7 @@ exports.handler = async (event) => {
                 let snsTopicName;
                 let stackInfo = await cloudformation.describeStacks(stackParams).promise();
                 logger.debug('##### Stackinfo: ' + JSON.stringify(stackInfo));
-                for (let i = 0; i < stackInfo.Stacks[0].Outputs; i++) {
+                for (let i = 0; i < stackInfo.Stacks[0].Outputs.length; i++) {
                     logger.debug('##### Stack key and value for i: ' + i + ' ' + stackInfo.Stacks[0].Outputs[i].OutputKey + ' ' + stackInfo.Stacks[0].Outputs[i].OutputValue);
                     if (stackInfo.Stacks[0].Outputs[i].OutputKey == "PeerNodeAlarmTopic")
                         snsTopicName = stackInfo.Stacks[0].Outputs[i].OutputValue

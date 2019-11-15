@@ -47,9 +47,9 @@ exports.handler = async (event) => {
             NetworkId: networkId
         };
 
-        logger.info('##### At timestamp: ' + new Date.toISOString() + '. About to call listMembers: ' + JSON.stringify(params));
+        logger.info('##### At timestamp: ' + new Date().toISOString() + '. About to call listMembers: ' + JSON.stringify(params));
         let members = await managedblockchain.listMembers(params).promise();
-        logger.debug('##### At timestamp: ' + new Date.toISOString() + '. Output of listMembers called during peer health check: ' + JSON.stringify(members));
+        logger.debug('##### At timestamp: ' + new Date().toISOString() + '. Output of listMembers called during peer health check: ' + JSON.stringify(members));
 
         for (let i = 0; i < members.Members.length; i++) {
             let member = members.Members[i];
@@ -71,9 +71,9 @@ exports.handler = async (event) => {
                 MemberId: member.Id
             };
 
-            logger.info('##### At timestamp: ' + new Date.toISOString() + '. About to call listNodes for network and member: ' + JSON.stringify(params));
+            logger.info('##### At timestamp: ' + new Date().toISOString() + '. About to call listNodes for network and member: ' + JSON.stringify(params));
             let nodes = await managedblockchain.listNodes(params).promise();
-            logger.debug('##### At timestamp: ' + new Date.toISOString() + '. Output of listNodes called during peer health check: ' + JSON.stringify(nodes));
+            logger.debug('##### At timestamp: ' + new Date().toISOString() + '. Output of listNodes called during peer health check: ' + JSON.stringify(nodes));
 
             let nodeInfo = [];
             for (let i = 0; i < nodes.Nodes.length; i++) {

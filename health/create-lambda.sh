@@ -37,8 +37,8 @@ cd peer-health
 rm -rf node_modules
 curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.0/install.sh | bash
 . ~/.nvm/nvm.sh
-nvm install lts/carbon
-nvm use lts/carbon
+nvm install lts/dubnium
+nvm use lts/dubnium
 npm install
 cd ..
 aws cloudformation package --template-file peer-health-template.yaml \

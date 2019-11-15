@@ -187,11 +187,9 @@ exports.handler = async (event) => {
                     Threshold: '1',
                     TreatMissingData: 'missing'
                 };
-
                 let cwAlarm = await cloudwatch.putMetricAlarm(cwAlarmParams).promise();
-                logger.debug('##### Output of putMetricAlarm called during peer health check: ' + JSON.stringify(cwAlarmParams));
+                logger.debug('##### Pushing alarms to topic: ' +  snsTopicName + '. Output of putMetricAlarm during peer health check: ' + JSON.stringify(cwAlarmParams));
             }
-
             // Store the node status for writing to the log after the loop is complete
             memberStatus.nodeInfo = nodeInfo;
             networkInfo.members.push(memberStatus);

@@ -47,9 +47,9 @@ exports.handler = async (event) => {
             NetworkId: networkId
         };
 
-        logger.info('##### About to call listMembers: ' + JSON.stringify(params));
+        logger.info('##### At timestamp: ' + new Date.toISOString() + '. About to call listMembers: ' + JSON.stringify(params));
         let members = await managedblockchain.listMembers(params).promise();
-        logger.debug('##### Output of listMembers called during peer health check: ' + JSON.stringify(members));
+        logger.debug('##### At timestamp: ' + new Date.toISOString() + '. Output of listMembers called during peer health check: ' + JSON.stringify(members));
 
         for (let i = 0; i < members.Members.length; i++) {
             let member = members.Members[i];
@@ -71,9 +71,9 @@ exports.handler = async (event) => {
                 MemberId: member.Id
             };
 
-            logger.info('##### About to call listNodes for network and member: ' + JSON.stringify(params));
+            logger.info('##### At timestamp: ' + new Date.toISOString() + '. About to call listNodes for network and member: ' + JSON.stringify(params));
             let nodes = await managedblockchain.listNodes(params).promise();
-            logger.debug('##### Output of listNodes called during peer health check: ' + JSON.stringify(nodes));
+            logger.debug('##### At timestamp: ' + new Date.toISOString() + '. Output of listNodes called during peer health check: ' + JSON.stringify(nodes));
 
             let nodeInfo = [];
             for (let i = 0; i < nodes.Nodes.length; i++) {
@@ -97,15 +97,6 @@ exports.handler = async (event) => {
                 }
                 logger.debug('##### Looping through nodes in healthpeers. Node is : ' + JSON.stringify(node));
                 nodeInfo.push(nodeStatus);
-
-                // Write out a log entry specifically for this node. Though we will write a complete status for the entire
-                // network at the end of the loop, to use a CloudWatch metric filter we will need each node in a separate log entry
-                let singleNodeInfo = {};
-                singleNodeInfo.type = 'ManagedBlockchainNodeInfo';
-                singleNodeInfo.networkId = networkId;
-                singleNodeInfo.member = memberStatus;
-                singleNodeInfo.node = nodeStatus;
-                logger.info('##### HealthCheck - Managed Blockchain network status: ' + JSON.stringify(singleNodeInfo));
 
                 // Publish a custom metric for each node to indidate whether available or not
                 let cwParams = {

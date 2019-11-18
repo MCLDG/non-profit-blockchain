@@ -145,13 +145,14 @@ exports.handler = async (event) => {
                 };
                 let snsTopicName;
                 let stackInfo = await cloudformation.describeStacks(stackParams).promise();
-                logger.debug('##### Stackinfo: ' + JSON.stringify(stackInfo));
+                logger.debug('##### Stackinfo for stack: ' + stackParams + ' ' + JSON.stringify(stackInfo));
                 for (let i = 0; i < stackInfo.Stacks[0].Outputs.length; i++) {
-                    logger.debug('##### Stack key and value for i: ' + i + ' ' + stackInfo.Stacks[0].Outputs[i].OutputKey + ' ' + stackInfo.Stacks[0].Outputs[i].OutputValue);
-                    if (stackInfo.Stacks[0].Outputs[i].OutputKey == "PeerNodeAlarmTopic")
-                        snsTopicName = stackInfo.Stacks[0].Outputs[i].OutputValue
+                    if (stackInfo.Stacks[0].Outputs[i].OutputKey == "PeerNodeAlarmTopic") {
+                        snsTopicName = stackInfo.Stacks[0].Outputs[i].OutputValue;
+                        break;
+                    }
                 }
-                
+
                 // Update the CW alarm. This should either set the alarm on or off, depending on whether the peer node is
                 // available or not
                 let cwAlarmParams = {
@@ -191,7 +192,7 @@ exports.handler = async (event) => {
                     TreatMissingData: 'missing'
                 };
                 let cwAlarm = await cloudwatch.putMetricAlarm(cwAlarmParams).promise();
-                logger.debug('##### Pushing alarms to topic: ' +  snsTopicName + '. Output of putMetricAlarm during peer health check: ' + JSON.stringify(cwAlarmParams));
+                logger.debug('##### Pushing alarms to topic: ' + snsTopicName + '. Output of putMetricAlarm during peer health check: ' + JSON.stringify(cwAlarmParams));
             }
             // Store the node status for writing to the log after the loop is complete
             memberStatus.nodeInfo = nodeInfo;
@@ -209,7 +210,7 @@ exports.handler = async (event) => {
         logger.error('##### Error when checking health of blockchain nodes, throwing an exception: ' + err);
         throw err;
     }
-    logger.debug('##### All nodes are healthy. Returning HTTP 200');
+    logger.debug('##### All managed blockchain nodes are healthy. Returning HTTP 200');
     let response = {
         'statusCode': 200,
         'body': JSON.stringify({

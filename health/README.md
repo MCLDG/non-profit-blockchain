@@ -5,7 +5,10 @@ The Lambda function will return success if all the peer nodes in the Fabric netw
 return an error. It will ignore peer nodes that have a status of CREATING, DELETING or DELETED. 
 
 An error from the Lambda will result in a CloudWatch alarm and an SNS notification routed to an email address. The 
-Lambda will be automatically invoked by a CloudWatch scheduled event.
+Lambda will be automatically invoked by a CloudWatch scheduled event. Ideally, the CloudWatch alarm would indicate
+the Managed Blockchain network with the failed peer. However, adding a dimension to the alarm causes the alarm to 
+remain in an 'Insufficient data' status, and the alarm is never triggered. I haven't investigated this fully, but 
+the added dimension seems to cause a mismatch between the CloudWatch metric and the associated alarm.
 
 In multi-member networks the peer-health check would typically run in each AWS account, providing notifications to 
 each account owner. Notifications would be provided regardless of the account owning the failed peer. This makes sense

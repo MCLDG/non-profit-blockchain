@@ -12,17 +12,9 @@ each account owner. Notifications would be provided regardless of the account ow
 as transactions are typically sent to peers owned by other members for endorsement, so a member would need to know if
 other peer nodes owned by other members had failed.
 
-The Lambda also creates CW custom metrics and CW alarms per peer node (custom metrics incur a cost, see 
-[here](https://aws.amazon.com/cloudwatch/pricing). If the peer node is AVAILABLE, the alarm status will 
-be set to OK, otherwise it will be set to ALARM. This is to allow notifications per peer node, and possibly a recovery
-process per peer that fails. If a single alarm was used for the entire Managed Blockchain network, it would  
-transition from OK->Alarm for the first failed peer, and there would be no further transition if a second peer node
-failed while in the Alarm state. The result would be a single notification regardless of how many peer nodes fail 
-while the alarm was in the Alarm state. Alarms per peer node allow multiple concurrent alarms for the same network.
+The Lambda also creates CloudWatch custom metrics and CloudWatch alarms per peer node (custom metrics incur a cost, see [here](https://aws.amazon.com/cloudwatch/pricing)). If the peer node is AVAILABLE, the alarm status will be set to OK, otherwise it will be set to ALARM. This is to allow notifications per peer node, and possibly a recovery process per peer that fails. If a single alarm was used for the entire Managed Blockchain network, it would  transition from OK->Alarm for the first failed peer, and there would be no further transition if a second peer node failed while in the Alarm state. The result would be a single notification regardless of how many peer nodes fail while the alarm was in the Alarm state. Alarms per peer node allow multiple concurrent alarms for the same network.
 
-CloudFormation and the Serverless Application Model (SAM) is used to package and deploy the Lambda function. More details
-on SAM can be found here: https://aws.amazon.com/serverless/sam/, however, note that I'm not using the SAM CLI but rather the
-equivalent `aws cloudformation` commands.
+CloudFormation and the Serverless Application Model (SAM) is used to package and deploy the Lambda function. More details on SAM can be found here: https://aws.amazon.com/serverless/sam/, however, note that I'm not using the SAM CLI but rather the equivalent `aws cloudformation` commands.
 
 ## Pre-requisites
 

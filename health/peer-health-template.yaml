@@ -107,6 +107,9 @@ Resources:
       - Name: FunctionName
         Value:
           Ref: PeerHealthFunction
+      - Name: NetworkId
+        Value:
+          Ref: NetworkId
       EvaluationPeriods: 1
       MetricName: Errors
       Namespace: AWS/Lambda

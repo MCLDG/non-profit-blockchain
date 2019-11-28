@@ -126,7 +126,7 @@ var invokeChaincode = async function(peerNames, channelName, chaincodeName, args
 			};
 			var sendPromise = channel.sendTransaction(orderer_request);
 			// put the send to the ordering service last so that the events get registered and
-			// are ready for the orderering and committing
+			// are ready for the ordering and committing
 			promises.push(sendPromise);
 			let results = await Promise.all(promises);
 			logger.info(util.format('##### invokeChaincode ------->>> R E S P O N S E : %j', results));

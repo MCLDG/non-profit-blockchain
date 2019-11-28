@@ -32,7 +32,7 @@ const cloudwatch = new AWS.CloudWatch();
 const cloudformation = new AWS.CloudFormation();
 const logger = require("./logging").getLogger("peer-health-Lambda");
 
-exports.handler = async (event) => {
+exports.handler = async (event, context) => {
     let networkId = event.networkId;
     let networkName = event.networkName;
     let unavailableNodes = [];
@@ -44,6 +44,18 @@ exports.handler = async (event) => {
 
     try {
         logger.info("=== Handler Function Start at timestamp: " + new Date().toISOString() + ' ' + JSON.stringify(event, null, 2));
+
+        // Set a timeout to trigger just before the Lambda times out. This is to catch a Lambda timeout and prevent
+        // it from throwing an exception. If the Lambda is about to time out we will log this as an error and return 
+        // from the Lambda without throwing an exception. This Lambda should only throw an exception if a 
+        // Managed Blockchain peer node is unavailable
+        const timer = setTimeout(() => {
+            logger.error('##### At timestamp: ' + new Date().toISOString() + '. Lambda is about to timeout. Check the previous log entries to debug. This Lambda will now exit and return a successful return code');
+            let response = {
+                'statusCode': 200
+            }
+            return response;
+        }, context.getRemainingTimeInMillis() - 1 * 1000);
 
         let params = {
             NetworkId: networkId
@@ -126,6 +138,10 @@ exports.handler = async (event) => {
                                 {
                                     Name: 'NodeInstanceType',
                                     Value: node.InstanceType
+                                },
+                                {
+                                    Name: 'NodeAvailabilityZone',
+                                    Value: node.AvailabilityZone
                                 }
                             ],
                             StorageResolution: '60',
@@ -182,6 +198,10 @@ exports.handler = async (event) => {
                         {
                             Name: 'NodeInstanceType',
                             Value: node.InstanceType
+                        },
+                        {
+                            Name: 'NodeAvailabilityZone',
+                            Value: node.AvailabilityZone
                         }
                     ],
                     MetricName: 'Availability',
@@ -204,6 +224,7 @@ exports.handler = async (event) => {
         if (nodeUnavailable)
             throw new Error('##### Managed blockchain node(s) unavailable: ' + unavailableNodes);
 
+        clearTimeout(timer);
         logger.info("=== Handler Function End at timestamp: " + new Date().toISOString());
     }
     catch (err) {

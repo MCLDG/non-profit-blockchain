@@ -54,6 +54,15 @@ exports.handler = async (event, context) => {
             NetworkId: networkId
         };
 
+        // set a timeout on the AWS SDK calls, to ensure they complete before the Lambda timeout. We do not want to
+        // throw an exception if the Lambda times out, otherwise this will raise a false CW alarm
+        AWS.config.update({httpOptions: 
+            {
+                connectTimeout: context.getRemainingTimeInMillis() - 2 * 1000, // timeout after failing to establish a connection
+                timeout: context.getRemainingTimeInMillis() - 1 * 1000 // timeout after a period of inactivity
+            }
+        });
+        
         logger.info('##### At timestamp: ' + new Date().toISOString() + '. About to call listMembers: ' + JSON.stringify(params));
         let members = await managedblockchain.listMembers(params).promise();
         logger.debug('##### At timestamp: ' + new Date().toISOString() + '. Output of listMembers called during peer health check: ' + JSON.stringify(members));

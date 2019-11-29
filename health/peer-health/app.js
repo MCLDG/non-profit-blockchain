@@ -27,7 +27,12 @@
 
 const util = require("util");
 const AWS = require('aws-sdk');
-const managedblockchain = new AWS.ManagedBlockchain();
+const managedblockchain = new AWS.ManagedBlockchain({httpOptions: 
+    {
+        connectTimeout: 3 * 1000, // timeout after failing to establish a connection
+        timeout: 5 * 1000, // timeout after a period of inactivity
+    }
+});
 const cloudwatch = new AWS.CloudWatch();
 const cloudformation = new AWS.CloudFormation();
 const logger = require("./logging").getLogger("peer-health-Lambda");
@@ -42,199 +47,188 @@ exports.handler = async (event, context) => {
     networkInfo.members = [];
     let nodeUnavailable = false;
 
-    return new Promise((resolve, reject) => {
-        try {
-            logger.info("=== Handler Function Start at timestamp: " + new Date().toISOString() + ' ' + JSON.stringify(event, null, 2));
+    try {
+        logger.info("=== Handler Function Start at timestamp: " + new Date().toISOString() + ' ' + JSON.stringify(event, null, 2));
 
-            // Set a timeout to trigger just before the Lambda times out. This is to catch a Lambda timeout and prevent
-            // it from throwing an exception. If the Lambda is about to time out we will log this as an error and return 
-            // from the Lambda without throwing an exception. This Lambda should only throw an exception if a 
-            // Managed Blockchain peer node is unavailable
-            const timer = setTimeout(() => {
-                logger.error('##### At timestamp: ' + new Date().toISOString() + '. Lambda is about to timeout. Check the previous log entries to debug. This Lambda will now exit and return a successful return code');
-                resolve();
-            }, context.getRemainingTimeInMillis() - 1 * 1000);
+        let params = {
+            NetworkId: networkId
+        };
+
+        logger.info('##### At timestamp: ' + new Date().toISOString() + '. About to call listMembers: ' + JSON.stringify(params));
+        let members = await managedblockchain.listMembers(params).promise();
+        logger.debug('##### At timestamp: ' + new Date().toISOString() + '. Output of listMembers called during peer health check: ' + JSON.stringify(members));
+
+        for (let i = 0; i < members.Members.length; i++) {
+            let member = members.Members[i];
+            let memberStatus = {};
+            memberStatus.memberId = member.Id;
+            memberStatus.memberName = member.Name;
+            memberStatus.memberStatus = member.Status;
+            memberStatus.memberIsOwned = member.IsOwned;
+
+            if (member.Status != 'AVAILABLE') {
+                // ignore members with other status'
+                logger.info('##### Member: ' + member.Id + ' is not AVAILABLE, and will be ignored. Member details are: ' + JSON.stringify(member));
+                networkInfo.members.push(memberStatus);
+                continue;
+            }
 
             let params = {
-                NetworkId: networkId
+                NetworkId: networkId,
+                MemberId: member.Id
             };
 
-            logger.info('##### At timestamp: ' + new Date().toISOString() + '. About to call listMembers: ' + JSON.stringify(params));
-            let members = await managedblockchain.listMembers(params).promise();
-            logger.debug('##### At timestamp: ' + new Date().toISOString() + '. Output of listMembers called during peer health check: ' + JSON.stringify(members));
+            logger.info('##### At timestamp: ' + new Date().toISOString() + '. About to call listNodes for network and member: ' + JSON.stringify(params));
+            let nodes = await managedblockchain.listNodes(params).promise();
+            logger.debug('##### At timestamp: ' + new Date().toISOString() + '. Output of listNodes called during peer health check: ' + JSON.stringify(nodes));
 
-            for (let i = 0; i < members.Members.length; i++) {
-                let member = members.Members[i];
-                let memberStatus = {};
-                memberStatus.memberId = member.Id;
-                memberStatus.memberName = member.Name;
-                memberStatus.memberStatus = member.Status;
-                memberStatus.memberIsOwned = member.IsOwned;
+            let nodeInfo = [];
+            for (let i = 0; i < nodes.Nodes.length; i++) {
+                let node = nodes.Nodes[i];
+                let nodeStatus = {};
+                nodeStatus.Id = node.Id;
+                nodeStatus.nodeStatus = node.Status;
+                nodeStatus.nodeAvailabilityZone = node.AvailabilityZone;
+                nodeStatus.nodeInstanceType = node.InstanceType;
 
-                if (member.Status != 'AVAILABLE') {
-                    // ignore members with other status'
-                    logger.info('##### Member: ' + member.Id + ' is not AVAILABLE, and will be ignored. Member details are: ' + JSON.stringify(member));
-                    networkInfo.members.push(memberStatus);
+                let nodeAvailable = 1;
+                if (node.Status == 'DELETED') {
+                    //TODO: code needs to look for nodes with a status of FAILED. All other status' should be ignored
+                    //I use other status here for testing purposes only. It's difficult to FAIL a peer node, but easy to CREATE/DELETE
                     continue;
                 }
-
-                let params = {
-                    NetworkId: networkId,
-                    MemberId: member.Id
-                };
-
-                logger.info('##### At timestamp: ' + new Date().toISOString() + '. About to call listNodes for network and member: ' + JSON.stringify(params));
-                let nodes = await managedblockchain.listNodes(params).promise();
-                logger.debug('##### At timestamp: ' + new Date().toISOString() + '. Output of listNodes called during peer health check: ' + JSON.stringify(nodes));
-
-                let nodeInfo = [];
-                for (let i = 0; i < nodes.Nodes.length; i++) {
-                    let node = nodes.Nodes[i];
-                    let nodeStatus = {};
-                    nodeStatus.Id = node.Id;
-                    nodeStatus.nodeStatus = node.Status;
-                    nodeStatus.nodeAvailabilityZone = node.AvailabilityZone;
-                    nodeStatus.nodeInstanceType = node.InstanceType;
-
-                    let nodeAvailable = 1;
-                    if (node.Status == 'DELETED') {
-                        //TODO: code needs to look for nodes with a status of FAILED. All other status' should be ignored
-                        //I use other status here for testing purposes only. It's difficult to FAIL a peer node, but easy to CREATE/DELETE
-                        continue;
-                    }
-                    else if (node.Status != 'AVAILABLE') {
-                        unavailableNodes.push(node.Id + ' ' + node.Status);
-                        nodeUnavailable = true;
-                        nodeAvailable = 0;
-                    }
-                    logger.debug('##### Looping through nodes in healthpeers. Node is : ' + JSON.stringify(node));
-                    nodeInfo.push(nodeStatus);
-
-                    // Publish a custom metric for each node to indidate whether available or not
-                    let cwParams = {
-                        Namespace: 'custom/managedblockchain',
-                        MetricData: [
-                            {
-                                MetricName: 'Availability',
-                                Dimensions: [
-                                    {
-                                        Name: 'NetworkId',
-                                        Value: networkId
-                                    },
-                                    {
-                                        Name: 'MemberId',
-                                        Value: member.Id
-                                    },
-                                    {
-                                        Name: 'AccountOwnsMember',
-                                        Value: member.IsOwned.toString()
-                                    },
-                                    {
-                                        Name: 'NodeId',
-                                        Value: node.Id
-                                    },
-                                    {
-                                        Name: 'NodeInstanceType',
-                                        Value: node.InstanceType
-                                    },
-                                    {
-                                        Name: 'NodeAvailabilityZone',
-                                        Value: node.AvailabilityZone
-                                    }
-                                ],
-                                StorageResolution: '60',
-                                Unit: 'Count',
-                                Value: nodeAvailable
-                            },
-                        ]
-                    };
-                    let cwMetric = await cloudwatch.putMetricData(cwParams).promise();
-                    logger.debug('##### Output of putMetricData called during peer health check: ' + JSON.stringify(cwMetric));
-
-                    // Get the ARN of the SNS Topic created in the peer-heatlh CloudFormation stack. The alarm will be published
-                    // to this topic. If the code below does not find the topic, the alarm is still created, though it has no
-                    // topic subscription
-                    var stackParams = {
-                        'StackName': networkName + '-peer-health-lambda'
-                    };
-                    let snsTopicName;
-                    let stackInfo = await cloudformation.describeStacks(stackParams).promise();
-                    logger.debug('##### Stackinfo for stack: ' + stackParams + ' ' + JSON.stringify(stackInfo));
-                    for (let i = 0; i < stackInfo.Stacks[0].Outputs.length; i++) {
-                        if (stackInfo.Stacks[0].Outputs[i].OutputKey == "PeerNodeAlarmTopic") {
-                            snsTopicName = stackInfo.Stacks[0].Outputs[i].OutputValue;
-                            break;
-                        }
-                    }
-
-                    // Update the CW alarm. This should either set the alarm on or off, depending on whether the peer node is
-                    // available or not
-                    let cwAlarmParams = {
-                        AlarmName: 'NodeAvailability-' + node.Id,
-                        ComparisonOperator: 'LessThanThreshold',
-                        EvaluationPeriods: '1',
-                        AlarmDescription: 'Alarm if managed blockchain peer node becomes UNAVAILABLE',
-                        ActionsEnabled: true,
-                        AlarmActions: [snsTopicName],
-                        Dimensions: [
-                            {
-                                Name: 'NetworkId',
-                                Value: networkId
-                            },
-                            {
-                                Name: 'MemberId',
-                                Value: member.Id
-                            },
-                            {
-                                Name: 'AccountOwnsMember',
-                                Value: member.IsOwned.toString()
-                            },
-                            {
-                                Name: 'NodeId',
-                                Value: node.Id
-                            },
-                            {
-                                Name: 'NodeInstanceType',
-                                Value: node.InstanceType
-                            },
-                            {
-                                Name: 'NodeAvailabilityZone',
-                                Value: node.AvailabilityZone
-                            }
-                        ],
-                        MetricName: 'Availability',
-                        Namespace: 'custom/managedblockchain',
-                        Period: '60',
-                        Statistic: 'Sum',
-                        Threshold: '1',
-                        TreatMissingData: 'missing'
-                    };
-                    let cwAlarm = await cloudwatch.putMetricAlarm(cwAlarmParams).promise();
-                    logger.debug('##### Pushing alarms to topic: ' + snsTopicName + '. Output of putMetricAlarm during peer health check: ' + JSON.stringify(cwAlarmParams));
+                else if (node.Status != 'AVAILABLE') {
+                    unavailableNodes.push(node.Id + ' ' + node.Status);
+                    nodeUnavailable = true;
+                    nodeAvailable = 0;
                 }
-                // Store the node status for writing to the log after the loop is complete
-                memberStatus.nodeInfo = nodeInfo;
-                networkInfo.members.push(memberStatus);
+                logger.debug('##### Looping through nodes in healthpeers. Node is : ' + JSON.stringify(node));
+                nodeInfo.push(nodeStatus);
+
+                // Publish a custom metric for each node to indidate whether available or not
+                let cwParams = {
+                    Namespace: 'custom/managedblockchain',
+                    MetricData: [
+                        {
+                            MetricName: 'Availability',
+                            Dimensions: [
+                                {
+                                    Name: 'NetworkId',
+                                    Value: networkId
+                                },
+                                {
+                                    Name: 'MemberId',
+                                    Value: member.Id
+                                },
+                                {
+                                    Name: 'AccountOwnsMember',
+                                    Value: member.IsOwned.toString()
+                                },
+                                {
+                                    Name: 'NodeId',
+                                    Value: node.Id
+                                },
+                                {
+                                    Name: 'NodeInstanceType',
+                                    Value: node.InstanceType
+                                },
+                                {
+                                    Name: 'NodeAvailabilityZone',
+                                    Value: node.AvailabilityZone
+                                }
+                            ],
+                            StorageResolution: '60',
+                            Unit: 'Count',
+                            Value: nodeAvailable
+                        },
+                    ]
+                };
+                let cwMetric = await cloudwatch.putMetricData(cwParams).promise();
+                logger.debug('##### Output of putMetricData called during peer health check: ' + JSON.stringify(cwMetric));
+
+                // Get the ARN of the SNS Topic created in the peer-heatlh CloudFormation stack. The alarm will be published
+                // to this topic. If the code below does not find the topic, the alarm is still created, though it has no
+                // topic subscription
+                var stackParams = {
+                    'StackName': networkName + '-peer-health-lambda'
+                };
+                let snsTopicName;
+                let stackInfo = await cloudformation.describeStacks(stackParams).promise();
+                logger.debug('##### Stackinfo for stack: ' + stackParams + ' ' + JSON.stringify(stackInfo));
+                for (let i = 0; i < stackInfo.Stacks[0].Outputs.length; i++) {
+                    if (stackInfo.Stacks[0].Outputs[i].OutputKey == "PeerNodeAlarmTopic") {
+                        snsTopicName = stackInfo.Stacks[0].Outputs[i].OutputValue;
+                        break;
+                    }
+                }
+
+                // Update the CW alarm. This should either set the alarm on or off, depending on whether the peer node is
+                // available or not
+                let cwAlarmParams = {
+                    AlarmName: 'NodeAvailability-' + node.Id,
+                    ComparisonOperator: 'LessThanThreshold',
+                    EvaluationPeriods: '1',
+                    AlarmDescription: 'Alarm if managed blockchain peer node becomes UNAVAILABLE',
+                    ActionsEnabled: true,
+                    AlarmActions: [snsTopicName],
+                    Dimensions: [
+                        {
+                            Name: 'NetworkId',
+                            Value: networkId
+                        },
+                        {
+                            Name: 'MemberId',
+                            Value: member.Id
+                        },
+                        {
+                            Name: 'AccountOwnsMember',
+                            Value: member.IsOwned.toString()
+                        },
+                        {
+                            Name: 'NodeId',
+                            Value: node.Id
+                        },
+                        {
+                            Name: 'NodeInstanceType',
+                            Value: node.InstanceType
+                        },
+                        {
+                            Name: 'NodeAvailabilityZone',
+                            Value: node.AvailabilityZone
+                        }
+                    ],
+                    MetricName: 'Availability',
+                    Namespace: 'custom/managedblockchain',
+                    Period: '60',
+                    Statistic: 'Sum',
+                    Threshold: '1',
+                    TreatMissingData: 'missing'
+                };
+                let cwAlarm = await cloudwatch.putMetricAlarm(cwAlarmParams).promise();
+                logger.debug('##### Pushing alarms to topic: ' + snsTopicName + '. Output of putMetricAlarm during peer health check: ' + JSON.stringify(cwAlarmParams));
             }
-            logger.info('##### HealthCheck - Managed Blockchain network status: ' + JSON.stringify(networkInfo));
+            // Store the node status for writing to the log after the loop is complete
+            memberStatus.nodeInfo = nodeInfo;
+            networkInfo.members.push(memberStatus);
+        }
 
-            if (nodeUnavailable)
-                reject(Error('##### Managed blockchain node(s) unavailable: ' + unavailableNodes));
+        logger.info('##### HealthCheck - Managed Blockchain network status: ' + JSON.stringify(networkInfo));
 
-            clearTimeout(timer);
-            logger.info("=== Handler Function End at timestamp: " + new Date().toISOString());
-        }
-        catch (err) {
-            logger.error('##### Error when checking health of blockchain nodes, throwing an exception: ' + err);
-            reject(Error(err));
-        }
-        logger.debug('##### All managed blockchain nodes are healthy. Returning HTTP 200');
-        let response = {
-            'statusCode': 200,
-            'body': JSON.stringify({
-                networkInfo
-            })
-        }
-        resolve(response);
-    });
+        if (nodeUnavailable)
+            throw new Error('##### Managed blockchain node(s) unavailable: ' + unavailableNodes);
+
+        logger.info("=== Handler Function End at timestamp: " + new Date().toISOString());
+    }
+    catch (err) {
+        logger.error('##### Error when checking health of blockchain nodes, throwing an exception: ' + err);
+        throw err;
+    }
+    logger.debug('##### All managed blockchain nodes are healthy. Returning HTTP 200');
+    let response = {
+        'statusCode': 200,
+        'body': JSON.stringify({
+            networkInfo
+        })
+    }
+    return response;
 };
